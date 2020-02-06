@@ -88,7 +88,7 @@ def nm_polynomial(n, m, rho, theta, normed=True):
 @lru_cache(maxsize=32)
 def rho_theta(size):
     r = np.linspace(-1,1,size)
-    X,Y = np.meshgrid(r,r)
+    X,Y = np.meshgrid(r,r, indexing='ij')
     rho = np.hypot(X,Y)
     theta = np.arctan2(Y,X)
     return rho, theta
@@ -98,7 +98,6 @@ def rho_theta(size):
 def outside_mask(size):
     rho, theta = rho_theta(size)
     return nm_polynomial(0, 0, rho, theta, normed=False) < 1
-
 
 
 # better way to do this?
@@ -150,21 +149,21 @@ class Zernike:
         return self.phase(*rho_theta(int(size)), normed=normed, outside=outside)
 
 
-    def phase(self, rho, theta, normed=True, outside=np.nan):
+    def phase(self, rho, theta, normed=True, outside=None):
         (isinstance(rho,np.ndarray) and rho.ndim==2 and rho.shape[0]==rho.shape[1]) or _raise(ValueError())
         (isinstance(theta,np.ndarray) and theta.shape==rho.shape) or _raise(ValueError())
         size = rho.shape[0]
         np.isscalar(normed) or _raise(ValueError())
-        np.isscalar(outside) or _raise(ValueError())
+        outside is None or np.isscalar(outside) or _raise(ValueError())
         w = nm_polynomial(self.n, self.m, rho, theta, normed=bool(normed))
-        w[outside_mask(size)] = outside
+        if outside is not None:
+            w[outside_mask(size)] = outside
         return w
 
 
     def __repr__(self):
         return f'Zernike(n={self.n}, m={self.m: 1}, noll={self.index_noll:2}, ansi={self.index_ansi:2}' + \
                (f", name='{self.name}')" if self.name is not None else ")")
-
 
 
 class ZernikeWavefront:
@@ -191,3 +190,6 @@ class ZernikeWavefront:
     def polynomial(self, size, normed=True, outside=np.nan):
         return np.sum([a * z.polynomial(size=size, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
 
+
+    def phase(self, rho, theta, normed=True, outside=None):
+        return np.sum([a * z.phase(rho=rho, theta=theta, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
