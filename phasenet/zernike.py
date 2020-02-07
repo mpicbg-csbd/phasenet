@@ -109,39 +109,64 @@ def dict_to_list(kv):
     return out
 
 
+def ensure_dict(values, order):
+    if isinstance(values,dict):
+        return values
+    if isinstance(values,np.ndarray):
+        values = tuple(values.ravel())
+    if isinstance(values,(tuple,list)):
+        order = str(order).lower()
+        order in ('noll','ansi') or _raise(ValueError())
+        offset = 1 if order=='noll' else 0
+        indices = range(offset,offset+len(values))
+        return dict(zip(indices,values))
+    raise ValueError()
+
+
+
 # Zernike class
 
 
+
 class Zernike:
-    _ansi_names = ['piston', 'tilt', 'tip', 'oblique astigmatism', 'defocus', 'vertical astigmatism',
-                   'vertical trefoil', 'vertical coma', 'horizontal coma', 'oblique trefoil', 'oblique quadrafoil',
-                   'oblique secondary astigmatism', 'primary spherical', 'vertical secondary astigmatism', 'vertical quadrafoil']
+    _ansi_names = ['piston', 'tilt', 'tip', 'oblique astigmatism', 'defocus',
+                   'vertical astigmatism', 'vertical trefoil', 'vertical coma',
+                   'horizontal coma', 'oblique trefoil', 'oblique quadrafoil',
+                   'oblique secondary astigmatism', 'primary spherical',
+                   'vertical secondary astigmatism', 'vertical quadrafoil']
     _nm_pairs = set((n,m) for n in range(200) for m in range(-n,n+1,2))
-    _noll_to_nm = dict(zip((nm_to_noll(*p) for p in _nm_pairs),_nm_pairs))
-    _ansi_to_nm = dict(zip((nm_to_ansi(*p) for p in _nm_pairs),_nm_pairs))
+    _noll_to_nm = dict(zip((nm_to_noll(*nm) for nm in _nm_pairs),_nm_pairs))
+    _ansi_to_nm = dict(zip((nm_to_ansi(*nm) for nm in _nm_pairs),_nm_pairs))
 
     ##############################################
 
     def __init__(self, index, order='noll'):
-        self.order = str(order).lower()
-        self.order in ('noll','ansi','nm') or _raise(ValueError())
+        super().__setattr__('_mutable', True)
+        if isinstance(index,str):
+            name = index.lower()
+            name in self._ansi_names or _raise(ValueError())
+            index = self._ansi_names.index(name)
+            order = 'ansi'
 
-        if self.order == 'nm':
-            (isinstance(index,(list,tuple)) and len(index)==2) or _raise(ValueError())
+        if isinstance(index,(list,tuple)) and len(index)==2:
             self.n, self.m = int(index[0]), int(index[1])
-            (self.n, self.m) in _nm_pairs or _raise(ValueError())
-
-        elif self.order == 'noll':
-            (isinstance(index,int) and 1 <= index) or _raise(ValueError())
-            self.n, self.m = self._noll_to_nm[index]
-
-        elif self.order == 'ansi':
-            (isinstance(index,int) and 0 <= index) or _raise(ValueError())
-            self.n, self.m = self._ansi_to_nm[index]
+            (self.n, self.m) in self._nm_pairs or _raise(ValueError())
+        elif isinstance(index,int):
+            order = str(order).lower()
+            order in ('noll','ansi') or _raise(ValueError())
+            if order == 'noll':
+                index in self._noll_to_nm or _raise(ValueError())
+                self.n, self.m = self._noll_to_nm[index]
+            elif order == 'ansi':
+                index in self._ansi_to_nm or _raise(ValueError())
+                self.n, self.m = self._ansi_to_nm[index]
+        else:
+            raise ValueError()
 
         self.index_noll = nm_to_noll(self.n, self.m)
         self.index_ansi = nm_to_ansi(self.n, self.m)
         self.name = self._ansi_names[self.index_ansi] if self.index_ansi < len(self._ansi_names) else None
+        self._mutable = False
 
 
     def polynomial(self, size, normed=True, outside=np.nan):
@@ -161,30 +186,44 @@ class Zernike:
         return w
 
 
+    def __hash__(self):
+        return hash((self.n,self.m))
+
+
+    def __eq__(self, other):
+        return isinstance(other,Zernike) and (self.n,self.m) == (other.n,other.m)
+
+
+    def __lt__(self, other):
+        return self.index_ansi < other.index_ansi
+
+
+    def __setattr__(self, *args):
+        if self._mutable:
+            super().__setattr__(*args)
+        else:
+            raise AttributeError('Zernike is immutable')
+
+
     def __repr__(self):
         return f'Zernike(n={self.n}, m={self.m: 1}, noll={self.index_noll:2}, ansi={self.index_ansi:2}' + \
                (f", name='{self.name}')" if self.name is not None else ")")
 
 
+
 class ZernikeWavefront:
     def __init__(self, amplitudes, order='noll'):
-        self.order = str(order).lower()
-        self.order in ('noll','ansi','nm') or _raise(ValueError())
-
-        if isinstance(amplitudes,np.ndarray):
-            amplitudes = tuple(amplitudes.ravel())
-        if isinstance(amplitudes,(tuple,list,np.ndarray)):
-            self.order in ('noll','ansi') or _raise(ValueError())
-            offset = 1 if order=='noll' else 0
-            indices = range(offset,offset+len(amplitudes))
-            amplitudes = dict(zip(indices,amplitudes))
-
-        isinstance(amplitudes,dict) or _raise(ValueError())
+        amplitudes = ensure_dict(amplitudes, order)
         all(np.isscalar(a) for a in amplitudes.values()) or _raise(ValueError())
 
         self.zernikes = {Zernike(j,order=order):a for j,a in amplitudes.items()}
-        self.amplitudes_noll = dict_to_list({z.index_noll:a for z,a in self.zernikes.items()})[1:]
-        self.amplitudes_ansi = dict_to_list({z.index_ansi:a for z,a in self.zernikes.items()})
+        self.amplitudes_noll = tuple(dict_to_list({z.index_noll:a for z,a in self.zernikes.items()})[1:])
+        self.amplitudes_ansi = tuple(dict_to_list({z.index_ansi:a for z,a in self.zernikes.items()}))
+        self.amplitudes_requested = tuple(self.zernikes[k] for k in sorted(self.zernikes.keys()))
+
+
+    def __len__(self):
+        return len(self.zernikes)
 
 
     def polynomial(self, size, normed=True, outside=np.nan):
@@ -193,3 +232,13 @@ class ZernikeWavefront:
 
     def phase(self, rho, theta, normed=True, outside=None):
         return np.sum([a * z.phase(rho=rho, theta=theta, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
+
+
+
+def random_zernike_wavefront(amplitude_ranges, order='noll', rng=None):
+        if rng is None: rng = np.random
+        amplitude_ranges = ensure_dict(amplitude_ranges, order)
+        all((np.isscalar(v) and v>=0) or (isinstance(v,(tuple,list)) and len(v)==2) for v in amplitude_ranges.values()) or _raise(ValueError())
+        amplitude_ranges = {k:((-v,v) if np.isscalar(v) else v) for k,v in amplitude_ranges.items()}
+        all(v[0]<=v[1] for v in amplitude_ranges.values()) or _raise(ValueError())
+        return ZernikeWavefront({k:rng.uniform(*v) for k,v in amplitude_ranges.items()}, order=order)

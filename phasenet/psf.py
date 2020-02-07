@@ -19,6 +19,9 @@ class PsfGenerator3D:
         :param n_threads: for multiprocessing
         """
 
+        psf_shape = tuple(psf_shape)
+        units = tuple(units)
+
         # setting up the fourier domain and the wavefronts...
 
         self.Nz, self.Ny, self.Nx = psf_shape
