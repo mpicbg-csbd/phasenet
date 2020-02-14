@@ -13,6 +13,7 @@ from csbdeep.models import BaseConfig, BaseModel
 
 from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
+from .noise import add_random_noise
 
 class Data:
 
@@ -20,8 +21,8 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
+                 noise_params = None,
                  # TODO: phantom parameter
-                 # TODO: camera noise parameter
                  # TODO: augmentation parameter (jitter & crop, etc.)
                  ):
         """
@@ -39,11 +40,19 @@ class Data:
         self.amplitude_ranges = ensure_dict(amplitude_ranges, order)
         self.batch_size = batch_size
 
+        if noise_params is not None:
+            self.noise_flag = True
+            self.noise_params = noise_params
+        else:
+            self.noise_flag=False
+
 
     def _single_psf(self):
         phi = random_zernike_wavefront(self.amplitude_ranges, order=self.order)
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
+        if self.noise_flag:
+            psf = add_random_noise(psf, self.noise_params)
         return psf, phi.amplitudes_requested
 
 
@@ -57,7 +66,7 @@ class Data:
 
 
 class Config(BaseConfig):
-    """ main config docstring """
+    """TODO: main config docstring """
 
     def __init__(self, axes='ZYX', n_channel_in=1, **kwargs):
         """See class docstring."""
