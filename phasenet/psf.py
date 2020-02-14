@@ -102,6 +102,7 @@ class PsfGenerator3D:
         """
         returns the incoherent psf for a given wavefront phi
            (which is just the squared absolute value of the coherent one)
+           The psf is normalized such that the sum intensity on each plane equals one
 
         :param phi: Zernike/ZernikeWavefront object
         :return: incoherent psf, 3d array
