@@ -196,10 +196,11 @@ class Zernike:
         (isinstance(theta,np.ndarray) and theta.shape==rho.shape) or _raise(ValueError('Only 2D square array for azimutha co-ordinate is accepted'))
         size = rho.shape[0]
         np.isscalar(normed) or _raise(ValueError())
-        outside is None or np.isscalar(outside) or _raise(ValueError()"Only scalar constant value for outside is accepted")
+        outside is None or np.isscalar(outside) or _raise(ValueError("Only scalar constant value for outside is accepted"))
         w = nm_polynomial(self.n, self.m, rho, theta, normed=bool(normed))
         if outside is not None:
-            w[outside_mask(size)] = outside
+            w[nm_polynomial(0, 0, rho, theta, normed=False) < 1] = outside 
+
         return w
 
 
