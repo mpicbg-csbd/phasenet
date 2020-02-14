@@ -3,10 +3,6 @@ from scipy.special import binom
 from csbdeep.utils import _raise
 from functools import lru_cache
 
-from abc import ABC
-
-
-# Helper function (probably don't expose to users)
 
 
 def nm_to_noll(n, m):
@@ -100,7 +96,6 @@ def outside_mask(size):
     return nm_polynomial(0, 0, rho, theta, normed=False) < 1
 
 
-# better way to do this?
 def dict_to_list(kv):
     max_key = max(kv.keys())
     out = [0]*(max_key+1)
@@ -116,19 +111,23 @@ def ensure_dict(values, order):
         values = tuple(values.ravel())
     if isinstance(values,(tuple,list)):
         order = str(order).lower()
-        order in ('noll','ansi') or _raise(ValueError())
+        order in ('noll','ansi') or _raise(ValueError("Could not identify the Zernike nomenclature/order"))
         offset = 1 if order=='noll' else 0
         indices = range(offset,offset+len(values))
         return dict(zip(indices,values))
-    raise ValueError()
-
-
-
-# Zernike class
+    raise ValueError("Could not identify the data type for dictionary formation")
 
 
 
 class Zernike:
+
+    """
+        Encapsulates Zernike polynomials
+
+        :param index: string, integer or tuple, index of Zernike polynomial e.g. 'defocus', 4, (2,2)
+        :param oder: string, defines the Zernike nomenclature if index is an integer, eg noll or ansi, default is noll
+    """
+
     _ansi_names = ['piston', 'tilt', 'tip', 'oblique astigmatism', 'defocus',
                    'vertical astigmatism', 'vertical trefoil', 'vertical coma',
                    'horizontal coma', 'oblique trefoil', 'oblique quadrafoil',
@@ -138,30 +137,28 @@ class Zernike:
     _noll_to_nm = dict(zip((nm_to_noll(*nm) for nm in _nm_pairs),_nm_pairs))
     _ansi_to_nm = dict(zip((nm_to_ansi(*nm) for nm in _nm_pairs),_nm_pairs))
 
-    ##############################################
-
     def __init__(self, index, order='noll'):
         super().__setattr__('_mutable', True)
         if isinstance(index,str):
             name = index.lower()
-            name in self._ansi_names or _raise(ValueError())
+            name in self._ansi_names or _raise(ValueError("Your input for index is string : Could not identify the name of Zernike polynomial"))
             index = self._ansi_names.index(name)
             order = 'ansi'
 
         if isinstance(index,(list,tuple)) and len(index)==2:
             self.n, self.m = int(index[0]), int(index[1])
-            (self.n, self.m) in self._nm_pairs or _raise(ValueError())
+            (self.n, self.m) in self._nm_pairs or _raise(ValueError("Your input for index is list/tuple : Could not identify the n,m order of Zernike polynomial"))
         elif isinstance(index,int):
             order = str(order).lower()
-            order in ('noll','ansi') or _raise(ValueError())
+            order in ('noll','ansi') or _raise(ValueError("Your input for index is int : Could not identify the Zernike nomenclature/order"))
             if order == 'noll':
-                index in self._noll_to_nm or _raise(ValueError())
+                index in self._noll_to_nm or _raise(ValueError("Your input for index is int and input for Zernike nomenclature is Noll: Could not identify the Zernike polynomial with this index"))
                 self.n, self.m = self._noll_to_nm[index]
             elif order == 'ansi':
-                index in self._ansi_to_nm or _raise(ValueError())
+                index in self._ansi_to_nm or _raise(ValueError("Your input for index is int and input for Zernike nomenclature is ANSI: Could not identify the Zernike polynomial with this index"))
                 self.n, self.m = self._ansi_to_nm[index]
         else:
-            raise ValueError()
+            raise ValueError("Could not identify your index input, we accept strings, lists and tuples only")
 
         self.index_noll = nm_to_noll(self.n, self.m)
         self.index_ansi = nm_to_ansi(self.n, self.m)
@@ -170,16 +167,36 @@ class Zernike:
 
 
     def polynomial(self, size, normed=True, outside=np.nan):
+        
+        """
+            For visualization of Zernike polynomial on a disc of unit radius
+
+            :param size: integer, Defines the shape of square grid, e.g. 256 or 512
+            :param normed: boolen, Whether the Zernike polynomials are normalized, default is True
+            :param outside: scalar, Outside padding of the spherical disc defined within a square grid, default is np.nan
+            :return: 2D array, Zernike polynomial computed on a disc of unit radius defined within a square grid  
+        """
+
         np.isscalar(size) and int(size) > 0 or _raise(ValueError())
         return self.phase(*rho_theta(int(size)), normed=normed, outside=outside)
 
 
     def phase(self, rho, theta, normed=True, outside=None):
-        (isinstance(rho,np.ndarray) and rho.ndim==2 and rho.shape[0]==rho.shape[1]) or _raise(ValueError())
-        (isinstance(theta,np.ndarray) and theta.shape==rho.shape) or _raise(ValueError())
+
+        """
+            For creation of a Zernike polynomial  with a given polar co-ordinate system
+
+            :param rho: 2D square array,  radial axis
+            :param theta: 2D square array, azimuthal axis
+            :param normed: boolen, whether the Zernike polynomials are normalized, default is True
+            :param outside: scalar, outside padding of the spherical disc defined within a square grid, default is None
+            :return: 2D array, Zernike polynomial computed for rho and theta
+        """
+        (isinstance(rho,np.ndarray) and rho.ndim==2 and rho.shape[0]==rho.shape[1]) or _raise(ValueError('Only 2D square array for radial co-ordinate is accepted'))
+        (isinstance(theta,np.ndarray) and theta.shape==rho.shape) or _raise(ValueError('Only 2D square array for azimutha co-ordinate is accepted'))
         size = rho.shape[0]
         np.isscalar(normed) or _raise(ValueError())
-        outside is None or np.isscalar(outside) or _raise(ValueError())
+        outside is None or np.isscalar(outside) or _raise(ValueError()"Only scalar constant value for outside is accepted")
         w = nm_polynomial(self.n, self.m, rho, theta, normed=bool(normed))
         if outside is not None:
             w[outside_mask(size)] = outside
@@ -212,9 +229,16 @@ class Zernike:
 
 
 class ZernikeWavefront:
+
+    """
+        Encapsulates the wavefront defined by Zernike polynomials
+
+        :param amplitudes: dictionary, nd array, tuple or list, Amplitudes of Zernike polynomials
+        :param oder: string, Zernike nomenclature, eg noll or ansi, default is noll 
+    """
     def __init__(self, amplitudes, order='noll'):
         amplitudes = ensure_dict(amplitudes, order)
-        all(np.isscalar(a) for a in amplitudes.values()) or _raise(ValueError())
+        all(np.isscalar(a) for a in amplitudes.values()) or _raise(ValueError("Could not identify scalar value for amplitudes after making a dictionary"))
 
         self.zernikes = {Zernike(j,order=order):a for j,a in amplitudes.items()}
         self.amplitudes_noll = tuple(dict_to_list({z.index_noll:a for z,a in self.zernikes.items()})[1:])
@@ -227,18 +251,46 @@ class ZernikeWavefront:
 
 
     def polynomial(self, size, normed=True, outside=np.nan):
+
+        """
+        For visualization of weighted sum of Zernike polynomials on a disc of unit radius
+
+        :param size: integer, Defines the shape of square grid, e.g. 256 or 512
+        :param normed: boolen, Whether the Zernike polynomials are normalized, default is True
+        :param outside: scalar, Outside padding of the spherical disc defined within a square grid, default is np.nan
+        :return: 2D array, weighted sums of Zernike polynomials computed on a disc of unit radius defined within a square grid
+        """
         return np.sum([a * z.polynomial(size=size, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
 
 
     def phase(self, rho, theta, normed=True, outside=None):
+
+        """
+        For creation of phase defined as a weighted sum of Zernike polynomial with a given polar co-ordinate system
+
+        :param rho: 2D square array,  radial axis
+        :param theta: 2D square array, azimuthal axis
+        :param normed: boolen, whether the Zernike polynomials are normalized, default is True
+        :param outside: scalar, outside padding of the spherical disc defined within a square grid, default is none
+        :return: 2D array, wavefront computed for rho and theta
+        """
         return np.sum([a * z.phase(rho=rho, theta=theta, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
 
 
 
 def random_zernike_wavefront(amplitude_ranges, order='noll', rng=None):
+
+        """
+            Creates random Zernike wavefront with random amplitudes drawn from a uniform distibution
+
+            :param aplitude_ranges: dictionary, nd array, tuple or list, amplitude bounds
+            :param oder: string, to define the Zernike nomenclature if index is an integer, eg noll or ansi, default is noll
+            :param rng:
+            :return: Zernike wavefront object
+        """
         if rng is None: rng = np.random
         amplitude_ranges = ensure_dict(amplitude_ranges, order)
         all((np.isscalar(v) and v>=0) or (isinstance(v,(tuple,list)) and len(v)==2) for v in amplitude_ranges.values()) or _raise(ValueError())
         amplitude_ranges = {k:((-v,v) if np.isscalar(v) else v) for k,v in amplitude_ranges.items()}
-        all(v[0]<=v[1] for v in amplitude_ranges.values()) or _raise(ValueError())
+        all(v[0]<=v[1] for v in amplitude_ranges.values()) or _raise(ValueError("Lower bound is expected to be less than the upper bound"))
         return ZernikeWavefront({k:rng.uniform(*v) for k,v in amplitude_ranges.items()}, order=order)

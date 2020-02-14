@@ -9,11 +9,11 @@ class PsfGenerator3D:
     def __init__(self, psf_shape, units, lam_detection, n, na_detection, n_threads=4):
 
         """
-        encapsulates psf generation
+        encapsulates 3D PSF generator
 
-        :param psf_shape: shape of psf, eg (32,32,32)
-        :param units: units in microns, eg (0.1,0.1,0.1)
-        :param lam_detection: wavelength in micrometer, eg 0.5
+        :param psf_shape: psf shape as (z,y,x), e.g. (64,64,64)
+        :param units: voxel size in microns, e.g. (0.1,0.1,0.1)
+        :param lam_detection: wavelength in microns, e.g. 0.5
         :param n: refractive index, eg 1.33
         :param na_detection: numerical aperture of detection objective, eg 1.1
         :param n_threads: for multiprocessing
@@ -88,7 +88,7 @@ class PsfGenerator3D:
         """
         returns the coherent psf for a given wavefront phi
 
-        :param phi: 2d array
+        :param phi: Zernike/ZernikeWavefront object
         :return: coherent psf, 3d array
         """
         phi = self.masked_phase_array(phi, normed=normed)
@@ -103,7 +103,7 @@ class PsfGenerator3D:
         returns the incoherent psf for a given wavefront phi
            (which is just the squared absolute value of the coherent one)
 
-        :param phi: 2d array
+        :param phi: Zernike/ZernikeWavefront object
         :return: incoherent psf, 3d array
         """
         _psf = np.abs(self.coherent_psf(phi, normed=normed, fftshift=fftshift)) ** 2
