@@ -14,6 +14,9 @@ from csbdeep.models import BaseConfig, BaseModel
 from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
 from .noise import add_random_noise
+from .phantoms import PhantomGenerator3D
+
+from scipy.signal import convolve
 
 class Data:
 
@@ -21,17 +24,17 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_params = None,
-                 # TODO: phantom parameter
+                 noise_params = None, phantom_name=None, phantom_params=None, jitter=False,
                  # TODO: augmentation parameter (jitter & crop, etc.)
                  ):
         """
-        psf_shape: shape of psf, eg (32,32,32)
-        units: units in microns, eg (0.1,0.1,0.1)
-        lam_detection: wavelength in micrometer, eg 0.5
-        n: refractive index, eg 1.33
-        na_detection: numerical aperture of detection objective, eg 1.1
-        n_threads: for multiprocessing
+        psf_shape: tuple, shape of psf, eg (32,32,32)
+        units: tuple, units in microns, eg (0.1,0.1,0.1)
+        lam_detection: scalar, wavelength in micrometer, eg 0.5
+        n: scalar, refractive index, eg 1.33
+        na_detection: scalar, numerical aperture of detection objective, eg 1.1
+        n_threads: integer, for multiprocessing
+        noise_params
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
@@ -39,18 +42,31 @@ class Data:
         self.normed = normed
         self.amplitude_ranges = ensure_dict(amplitude_ranges, order)
         self.batch_size = batch_size
-
+        self.jitter = jitter
+        
         if noise_params is not None:
             self.noise_flag = True
             self.noise_params = noise_params
         else:
             self.noise_flag=False
 
+        if phantom_name is not None:
+            self.phantom_flag = True
+            isinstance(phantom_params,dict) or _raise(ValueError('phantom_params has to be a dictionary'))
+            self.phantom_params = phantom_params
+            self.phantom_shape = self.phantom_params.get('phantom_shape', psf_shape)
+            self.phantomgen = PhantomGenerator3D(self.phantom_shape, units)
+            self.phantom_name = phantom_name
+            self.phantom_img = self.phantomgen.get_phantom_img(self.phantom_name, self.phantom_params)
+        else:
+            self.phantom_flag=False
 
     def _single_psf(self):
         phi = random_zernike_wavefront(self.amplitude_ranges, order=self.order)
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
+        if self.phantom_flag:
+            psf = convolve(self.phantom_img, psf, mode='same')
         if self.noise_flag:
             psf = add_random_noise(psf, self.noise_params)
         return psf, phi.amplitudes_requested
