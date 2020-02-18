@@ -15,6 +15,7 @@ from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
 from .noise import add_random_noise
 from .phantoms import PhantomGenerator3D
+from .utils import cropper3D
 
 from scipy.signal import convolve
 
@@ -24,7 +25,7 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_params = None, phantom_name=None, phantom_params=None, jitter=False,
+                 noise_params = None, phantom_name=None, phantom_params=None, crop_params=None,
                  # TODO: augmentation parameter (jitter & crop, etc.)
                  ):
         """
@@ -44,7 +45,6 @@ class Data:
         self.normed = normed
         self.amplitude_ranges = ensure_dict(amplitude_ranges, order)
         self.batch_size = batch_size
-        self.jitter = jitter
         
         if noise_params is not None:
             self.noise_flag = True
@@ -63,6 +63,12 @@ class Data:
         else:
             self.phantom_flag=False
 
+        if crop_params is not None:
+            self.crop_flag = True
+            self.crop_params = crop_params
+        else:
+            self.crop_flag=False
+
     def _single_psf(self):
         phi = random_zernike_wavefront(self.amplitude_ranges, order=self.order)
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
@@ -71,6 +77,8 @@ class Data:
             psf = convolve(self.phantom_img, psf, mode='same')
         if self.noise_flag:
             psf = add_random_noise(psf, self.noise_params)
+        if self.crop_flag:
+            psf = cropper3D(psf, self.crop_params)
         return psf, phi.amplitudes_requested
 
 
@@ -205,10 +213,7 @@ class PhaseNet(BaseModel):
         t = Flatten(name='flat')(t)
         t = Dense(64, name='dense1', activation=activation)(t)
         t = Dense(64, name='dense2', activation=activation)(t)
-        #t = Dense(64, name='dense3', activation=activation)(t)
-        #t = Dense(64, name='dense4', activation=activation)(t)
-        # t   = Dense(128,   name='dense5', activation=activation)(t)
-        # t   = Dense(128,   name='dense6', activation=activation)(t)
+
         oup = Dense(output_size, name='Y', activation='linear')(t)
         return Model(inputs=inp, outputs=oup)
 
