@@ -11,12 +11,12 @@ class PsfGenerator3D:
         """
         encapsulates 3D PSF generator
 
-        :param psf_shape: psf shape as (z,y,x), e.g. (64,64,64)
-        :param units: voxel size in microns, e.g. (0.1,0.1,0.1)
-        :param lam_detection: wavelength in microns, e.g. 0.5
-        :param n: refractive index, eg 1.33
-        :param na_detection: numerical aperture of detection objective, eg 1.1
-        :param n_threads: for multiprocessing
+        :param psf_shape: tuple, psf shape as (z,y,x), e.g. (64,64,64)
+        :param units: tuple, voxel size in microns, e.g. (0.1,0.1,0.1)
+        :param lam_detection: scalar, wavelength in microns, e.g. 0.5
+        :param n: scalar, refractive index, eg 1.33
+        :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
+        :param n_threads: integer, for multiprocessing
         """
 
         psf_shape = tuple(psf_shape)
@@ -78,7 +78,7 @@ class PsfGenerator3D:
         returns masked Zernike polynomial for back focal plane, masked according to the setup
 
         :param phi: Zernike/ZernikeWavefront object
-        :param normed: multiplied by normalization factor, eg True
+        :param normed: boolean, multiplied by normalization factor, eg True
         :return: masked wavefront, 2d array
         """
         return self.kmask2 * phi.phase(self.krho, self.kphi, normed=normed, outside=None)
