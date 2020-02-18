@@ -34,7 +34,9 @@ class Data:
         n: scalar, refractive index, eg 1.33
         na_detection: scalar, numerical aperture of detection objective, eg 1.1
         n_threads: integer, for multiprocessing
-        noise_params
+        noise_params : dictionary, values for mean, sigma and snr
+        phantom_name : string, phantom name
+        phantom_params : dictionary, parameters according to the phantom chosen
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)

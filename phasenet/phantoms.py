@@ -50,8 +50,7 @@ class PhantomGenerator3D():
 
         """
             creates multiple points
-
-            :param size: integer, Defines the shape of square grid, e.g. 32 or 64
+            
             :param num: integer, number of points, e.g. 3
             :param center: boolean, whether to have a point at the center, default is False
             :param pad_from_boundary: integer, leave space between points and bouandary. Helpful for convolution, recommended size//5
