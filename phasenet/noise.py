@@ -41,8 +41,8 @@ def add_random_noise(image, params, rng=None):
     all((np.isscalar(v) and v>=1) or (isinstance(v,(tuple,list)) and len(v)==2) for v in params.values()) or _raise(ValueError())
     params = {k:((v,v) if np.isscalar(v) else v) for k,v in params.items()}
     all(v[0]<=v[1] for v in params.values()) or _raise(ValueError("Lower bound is expected to be less than the upper bound"))
-    mean = np.random.uniform(*params['mean']) if 'sigma' in params else _raise(ValueError("No value for sigma"))
-    sigma = np.random.uniform(*params['sigma']) if 'sigma' in params else _raise(ValueError("No vlaue for mean"))
+    mean = np.random.uniform(*params['mean']) if 'mean' in params else _raise(ValueError("No value for mean"))
+    sigma = np.random.uniform(*params['sigma']) if 'sigma' in params else _raise(ValueError("No vlaue for sigma"))
     snr = np.random.uniform(*params['snr']) if 'snr' in params else _raise(ValueError("No value for SNR"))
 
     noisy = n.add_normal_poisson_noise(mean=mean, sigma=sigma, snr=snr)
