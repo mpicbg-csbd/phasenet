@@ -224,8 +224,7 @@ class Zernike:
 
 
     def __repr__(self):
-        return f'Zernike(n={self.n}, m={self.m: 1}, noll={self.index_noll:2}, ansi={self.index_ansi:2}' + \
-               (f", name='{self.name}')" if self.name is not None else ")")
+        return f'Zernike(n={self.n}, m={self.m: 1}, noll={self.index_noll:2}, ansi={self.index_ansi:2}' + (f", name='{self.name}')" if self.name is not None else ")")
 
 
 

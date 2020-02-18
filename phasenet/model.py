@@ -26,7 +26,6 @@ class Data:
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
                  noise_params = None, phantom_name=None, phantom_params=None, crop_params=None,
-                 # TODO: augmentation parameter (jitter & crop, etc.)
                  ):
         """
         psf_shape: tuple, shape of psf, eg (32,32,32)
@@ -38,6 +37,7 @@ class Data:
         noise_params : dictionary, values for mean, sigma and snr
         phantom_name : string, phantom name
         phantom_params : dictionary, parameters according to the phantom chosen
+        crop_params : dictionary, values for crop_shape, jitter, max_jitter
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
