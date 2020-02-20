@@ -29,10 +29,10 @@ class NoiseGenerator:
 
 def add_random_noise(image, params, rng=None):
     """
-    add gaussian and poisson noise to the system
-    :param image: 3D array as image
-    :param params: dictionary expecting scalar or list/tuples for snr, mean, sigma
-    :return:
+        add gaussian and poisson noise to the system
+        :param image: 3D array as image
+        :param params: dictionary expecting scalar or list/tuples for snr, mean, sigma
+        :return:
 
     """
     if rng is None: rng = np.random

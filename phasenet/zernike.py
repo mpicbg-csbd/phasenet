@@ -253,12 +253,12 @@ class ZernikeWavefront:
     def polynomial(self, size, normed=True, outside=np.nan):
 
         """
-        For visualization of weighted sum of Zernike polynomials on a disc of unit radius
+            For visualization of weighted sum of Zernike polynomials on a disc of unit radius
 
-        :param size: integer, Defines the shape of square grid, e.g. 256 or 512
-        :param normed: boolen, Whether the Zernike polynomials are normalized, default is True
-        :param outside: scalar, Outside padding of the spherical disc defined within a square grid, default is np.nan
-        :return: 2D array, weighted sums of Zernike polynomials computed on a disc of unit radius defined within a square grid
+            :param size: integer, Defines the shape of square grid, e.g. 256 or 512
+            :param normed: boolen, Whether the Zernike polynomials are normalized, default is True
+            :param outside: scalar, Outside padding of the spherical disc defined within a square grid, default is np.nan
+            :return: 2D array, weighted sums of Zernike polynomials computed on a disc of unit radius defined within a square grid
         """
         return np.sum([a * z.polynomial(size=size, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
 
@@ -266,13 +266,13 @@ class ZernikeWavefront:
     def phase(self, rho, theta, normed=True, outside=None):
 
         """
-        For creation of phase defined as a weighted sum of Zernike polynomial with a given polar co-ordinate system
+            For creation of phase defined as a weighted sum of Zernike polynomial with a given polar co-ordinate system
 
-        :param rho: 2D square array,  radial axis
-        :param theta: 2D square array, azimuthal axis
-        :param normed: boolen, whether the Zernike polynomials are normalized, default is True
-        :param outside: scalar, outside padding of the spherical disc defined within a square grid, default is none
-        :return: 2D array, wavefront computed for rho and theta
+            :param rho: 2D square array,  radial axis
+            :param theta: 2D square array, azimuthal axis
+            :param normed: boolen, whether the Zernike polynomials are normalized, default is True
+            :param outside: scalar, outside padding of the spherical disc defined within a square grid, default is none
+            :return: 2D array, wavefront computed for rho and theta
         """
         return np.sum([a * z.phase(rho=rho, theta=theta, normed=normed, outside=outside) for z,a in self.zernikes.items()], axis=0)
 

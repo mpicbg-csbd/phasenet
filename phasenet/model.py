@@ -28,16 +28,18 @@ class Data:
                  noise_params = None, phantom_name=None, phantom_params=None, crop_params=None,
                  ):
         """
-        psf_shape: tuple, shape of psf, eg (32,32,32)
-        units: tuple, units in microns, eg (0.1,0.1,0.1)
-        lam_detection: scalar, wavelength in micrometer, eg 0.5
-        n: scalar, refractive index, eg 1.33
-        na_detection: scalar, numerical aperture of detection objective, eg 1.1
-        n_threads: integer, for multiprocessing
-        noise_params : dictionary, values for mean, sigma and snr
-        phantom_name : string, phantom name
-        phantom_params : dictionary, parameters according to the phantom chosen
-        crop_params : dictionary, values for crop_shape, jitter, max_jitter
+            Encapsulates data gerenation
+
+            :param psf_shape: tuple, shape of psf, eg (32,32,32)
+            :param units: tuple, units in microns, eg (0.1,0.1,0.1)
+            :param lam_detection: scalar, wavelength in micrometer, eg 0.5
+            :param n: scalar, refractive index, eg 1.33
+            :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
+            :param n_threads: integer, for multiprocessing
+            :param noise_params : dictionary, values for mean, sigma and snr
+            :param phantom_name : string, phantom name
+            :param phantom_params : dictionary, parameters according to the phantom chosen
+            :param crop_params : dictionary, values for crop_shape, jitter, max_jitter
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
@@ -92,7 +94,39 @@ class Data:
 
 
 class Config(BaseConfig):
-    """TODO: main config docstring """
+    """
+        Configuration for phasenet models
+        
+        :param zernike_amplitude_ranges: dictionary or list, the values should either a scalar indicating the absolute magnitude 
+                or a tuple with upper and lower bound, default is {'vertical coma': (-0.2,0.2)}
+        :param zernike_order: string, zernike nomeclature used when the amplitude ranges are given as a list, default is 'noll'
+        :param zernike_normed: booelan, whether the zzernikes are normalized according, default is True
+        :param net_kernel_size: convoltuion kernel size, default is (3,3,3)
+        :param net_pool_size: max pool kernel size, default is (1,2,2)
+        :param net_activation: activation, default is 'tanh'
+        :param net_padding: padding for convolution, default is 'same'
+        
+        :param psf_shape: tuple, shpae of the psf, default is (64,64,64)
+        :param psf_units: tuple, voxel unit (z,y,x) in um, default is (0.1,0.1,0.1)
+        :param psf_na_detection: scalar, numerical apperture default is 1.1
+        :param psf_lam_detection: scalar, wavelength in um, default is 0.5
+        :param psf_n: scalar, refractive index of immersion medium, default is 1.33
+        :param noise_params: dictionary, noise  parameters, the value of each parameter can be a scalar for constant or a tuple 
+                for upper and lower bound, if no noise is required set to None, default is {'mean':100, 'sigma':3.5, 'snr':(1.,5)}
+        :param phantom_name: string, name of convolving object, set to None if not needed, default is 'sphere' 
+        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'radius':0.1} 
+        :param crop_params: dictionary, parameters for cropping the psf, default is {'crop_shape':(32,32,32), 'jitter':True},
+                max_jitter can also be passed as a key to the dictionary
+        
+        :param train_loss: string, training loss, default is 'mse'
+        :param train_epochs: integer, number of epochs for trianing, default is 400
+        :param train_steps_per_epoch: integer, number of steps per epoch, default is 5
+        :param train_learning_rate: scalar, leaning rate, default is 0.0003
+        :param train_batch_size: integer, batch size for training the network, default is 8
+        :param train_n_val: integer, number of validation data, default is 128 
+        :param train_tensorboard: boolean, create tensorboard, default is True
+
+    """
 
     def __init__(self, axes='ZYX', n_channel_in=1, **kwargs):
         """See class docstring."""

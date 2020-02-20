@@ -4,10 +4,10 @@ import random
 def cropper3D(image, params):
 
 	"""
-            crops 3d images
-            
-            :param  image: 3d array, image to be cropped
-            :params dictionary: should contain crop_shape(tuple), jitter(boolean) and max_jitter(scalar)
+        crops 3d images
+        
+        :param  image: 3d array, image to be cropped
+        :params dictionary: should contain crop_shape(tuple), jitter(boolean) and max_jitter(scalar)
 	"""
 
 	'crop_shape' in params or _raise(ValueError('Crop shape not defined'))
