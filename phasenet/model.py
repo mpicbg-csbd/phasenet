@@ -1,5 +1,6 @@
 import numpy as np
 from distutils.version import LooseVersion
+import warnings
 
 import keras
 import keras.backend as K
@@ -25,7 +26,9 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_params = None, phantom_name=None, phantom_params=None, crop_params=None,
+                 snr=None, mean=None, sigma=None, 
+                 phantom_name=None, phantom_params=None, 
+                 crop_shape=None, jitter=False, max_jitter=None
                  ):
         """
             Encapsulates data gerenation
@@ -36,10 +39,14 @@ class Data:
             :param n: scalar, refractive index, eg 1.33
             :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
             :param n_threads: integer, for multiprocessing
-            :param noise_params : dictionary, values for mean, sigma and snr
+            :param snr: scalar or tuple, signal to noise ratio
+            :param mean: scalar or tuple, mean background noise
+            :param sigma: scalar or tuple, simga for gaussian noise 
             :param phantom_name : string, phantom name
             :param phantom_params : dictionary, parameters according to the phantom chosen
-            :param crop_params : dictionary, values for crop_shape, jitter, max_jitter
+            :param crop_shape: tuple, crop shape
+            :param jitter: booelan, randomly move the center point within a given limit, default is False
+            :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
@@ -47,12 +54,12 @@ class Data:
         self.normed = normed
         self.amplitude_ranges = ensure_dict(amplitude_ranges, order)
         self.batch_size = batch_size
-        
-        if noise_params is not None:
-            self.noise_flag = True
-            self.noise_params = noise_params
-        else:
-            self.noise_flag=False
+        self.snr = snr
+        self.sigma = sigma
+        self.mean = mean
+        self.crop_shape = crop_shape
+        self.jitter = jitter
+        self.max_jitter = max_jitter
 
         if phantom_name is not None:
             self.phantom_flag = True
@@ -65,22 +72,29 @@ class Data:
         else:
             self.phantom_flag=False
 
-        if crop_params is not None:
-            self.crop_flag = True
-            self.crop_params = crop_params
-        else:
-            self.crop_flag=False
 
     def _single_psf(self):
         phi = random_zernike_wavefront(self.amplitude_ranges, order=self.order)
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
+        
         if self.phantom_flag:
-            psf = convolve(self.phantom_img, psf, mode='same')
-        if self.noise_flag:
-            psf = add_random_noise(psf, self.noise_params)
-        if self.crop_flag:
-            psf = cropper3D(psf, self.crop_params)
+            psf = convolve(self.phantom_img, psf, mode='same') #TODO check with Martin
+
+        if self.snr is not None and self.sigma is not None and self.mean is not None:
+            self.noise_flag = True
+            psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
+        else:
+            self.noise_flag = False
+            if self.snr is not None or self.sigma is not None or self.mean is not None:
+                warnings.warn("No noise added")
+        
+        if self.crop_shape is not None:
+            self.crop_flag = True
+            psf = cropper3D(psf, self.crop_shape, jitter=self.jitter, max_jitter=self.max_jitter)
+        else:
+            self.crop_flag =  False
+        
         return psf, phi.amplitudes_requested
 
 
@@ -111,13 +125,14 @@ class Config(BaseConfig):
         :param psf_na_detection: scalar, numerical apperture default is 1.1
         :param psf_lam_detection: scalar, wavelength in um, default is 0.5
         :param psf_n: scalar, refractive index of immersion medium, default is 1.33
-        :param noise_params: dictionary, noise  parameters, the value of each parameter can be a scalar for constant or a tuple 
-                for upper and lower bound, if no noise is required set to None, default is {'mean':100, 'sigma':3.5, 'snr':(1.,5)}
+        :param snr: scalar or tuple, signal to noise ratio
+        :param mean: scalar or tuple, mean background noise
+        :param sigma: scalar or tuple, simga for gaussian noise
         :param phantom_name: string, name of convolving object, set to None if not needed, default is 'sphere' 
         :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'radius':0.1} 
-        :param crop_params: dictionary, parameters for cropping the psf, default is {'crop_shape':(32,32,32), 'jitter':True},
-                max_jitter can also be passed as a key to the dictionary
-        
+        :param crop_shape: tuple, crop shape
+        :param jitter: booelan, randomly move the center point within a given limit, default is False
+        :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
         :param train_loss: string, training loss, default is 'mse'
         :param train_epochs: integer, number of epochs for trianing, default is 400
         :param train_steps_per_epoch: integer, number of steps per epoch, default is 5
@@ -151,10 +166,14 @@ class Config(BaseConfig):
         self.psf_na_detection          = 1.1
         self.psf_lam_detection         = 0.5
         self.psf_n                     = 1.33
-        self.noise_params              = {'mean':100, 'sigma':3.5, 'snr':(1.,5)}
+        self.mean                      = 100
+        self.sigma                     = 3.5
+        self.snr                       = (1.,5)
         self.phantom_name              = 'sphere' 
         self.phantom_params            = {'radius':0.1} 
-        self.crop_params               = {'crop_shape':(32,32,32), 'jitter':True}
+        self.crop_shape                = (32,32,32)
+        self.jitter                    = True
+        self.max_jitter                = None
 
         self.train_loss                = 'mse'
         self.train_epochs              = 400

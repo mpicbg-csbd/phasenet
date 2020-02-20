@@ -2,50 +2,48 @@ import numpy as np
 import matplotlib.pyplot as plt
 from csbdeep.utils import _raise
 
-class NoiseGenerator:
+def normal_noise(image, mean, sigma, snr):
+    noisy = np.random.normal(mean, sigma, image.shape) + image * mean * snr
+    return noisy
 
-    def __init__(self, image):
+def poisson_noise(image, snr):
 
-        self.img = image
-        self.img = (self.img - np.min(self.img)) / (np.max(self.img) + np.min(self.img))
+    lambdaDistribution = image  * snr
+    noisy = np.random.poisson(np.maximum(1, lambdaDistribution + 1).astype(int)).astype(np.float32)
+    return noisy
 
-    def _normal_noise(self, mean, sigma, snr):
-        noisy = np.random.normal(mean, sigma, self.img.shape) + self.img * mean * snr
-        return noisy
+def add_normal_poisson_noise(image, mean, sigma, snr):
 
-    def _poisson_noise(self, snr):
+    normal_noise_img = normal_noise(image=image, mean=mean, sigma=sigma, snr=snr)
+    poisson_noise_img = poisson_noise(image=image, snr=snr)
+    noisy_img = normal_noise_img + poisson_noise_img
+    return noisy_img
 
-        lambdaDistribution = self.img  * snr
-        noisy = np.random.poisson(np.maximum(1, lambdaDistribution + 1).astype(int)).astype(np.float32)
-        return noisy
-
-    def add_normal_poisson_noise(self, mean, sigma, snr):
-
-        normal_noise_img = self._normal_noise(mean=mean, sigma=sigma, snr=snr)
-        poisson_noise_img = self._poisson_noise(snr=snr)
-        _noisy_img = normal_noise_img + poisson_noise_img
-        return _noisy_img
-
-
-def add_random_noise(image, params, rng=None):
+def add_random_noise(image, snr, mean, sigma, rng=None):
     """
         add gaussian and poisson noise to the system
         :param image: 3D array as image
-        :param params: dictionary expecting scalar or list/tuples for snr, mean, sigma
-        :return:
+        :param snr: scalar or tuple, signal to noise ratio
+        :param mean: scalar or tuple, mean background noise
+        :param sigma: scalar or tuple, simga for gaussian noise 
+        :return: 3d array
 
     """
     if rng is None: rng = np.random
 
-    n = NoiseGenerator(image)
-    all((np.isscalar(v) and v>=1) or (isinstance(v,(tuple,list)) and len(v)==2) for v in params.values()) or _raise(ValueError())
-    params = {k:((v,v) if np.isscalar(v) else v) for k,v in params.items()}
-    all(v[0]<=v[1] for v in params.values()) or _raise(ValueError("Lower bound is expected to be less than the upper bound"))
-    mean = np.random.uniform(*params['mean']) if 'mean' in params else _raise(ValueError("No value for mean"))
-    sigma = np.random.uniform(*params['sigma']) if 'sigma' in params else _raise(ValueError("No vlaue for sigma"))
-    snr = np.random.uniform(*params['snr']) if 'snr' in params else _raise(ValueError("No value for SNR"))
+    snr = (snr, snr) if np.isscalar(snr) else snr
+    mean = (mean, mean) if np.isscalar(mean) else mean
+    sigma =(sigma, sigma) if np.isscalar(sigma) else sigma
 
-    noisy = n.add_normal_poisson_noise(mean=mean, sigma=sigma, snr=snr)
+
+    all(v[0]<=v[1] for v in [snr,mean,sigma]) or _raise(ValueError("Lower bound is expected to be less than the upper bound"))
+    all(v[0]>=0 and v[1]>=0 for v in [snr,mean,sigma]) or _raise(ValueError("noise is expected to be greater than 0"))
+    
+    mean = np.random.uniform(*mean)
+    sigma = np.random.uniform(*sigma) 
+    snr = np.random.uniform(*snr)
+    image = (image - np.min(image)) / (np.max(image) + np.min(image))
+    noisy = add_normal_poisson_noise(image=image, mean=mean, sigma=sigma, snr=snr)
     noisy = np.maximum(0, noisy)
 
     return noisy
