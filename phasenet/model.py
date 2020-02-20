@@ -142,7 +142,7 @@ class Config(BaseConfig):
 
         self.n_channel_out = len(random_zernike_wavefront(self.zernike_amplitude_ranges))
 
-        if 'crop_shape' in self.crop_params:
+        if isinstance(self.crop_params,dict) amd and 'crop_shape' in self.crop_params:
             self._model_input_shape = self.crop_params.get('crop_shape')
         else:
             self._model_input_shape = self.psf_shape
