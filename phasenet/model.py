@@ -124,7 +124,7 @@ class Config(BaseConfig):
 
         self.train_loss                = 'mse'
         self.train_epochs              = 400
-        self.train_steps_per_epoch     = 100
+        self.train_steps_per_epoch     = 5
         self.train_learning_rate       = 0.0003
         self.train_batch_size          = 8
         self.train_n_val               = 128
