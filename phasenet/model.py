@@ -142,6 +142,11 @@ class Config(BaseConfig):
 
         self.n_channel_out = len(random_zernike_wavefront(self.zernike_amplitude_ranges))
 
+        if 'crop_shape' in self.crop_params:
+            self._model_input_shape = self.crop_params.get('crop_shape')
+        else:
+            self._model_input_shape = self.psf_shape
+
 
 
 class PhaseNet(BaseModel):
@@ -187,7 +192,7 @@ class PhaseNet(BaseModel):
 
 
     def _build(self):
-        input_shape = tuple(self.config.psf_shape) + (self.config.n_channel_in,)
+        input_shape = tuple(self.config._model_input_shape) + (self.config.n_channel_in,)
         output_size = self.config.n_channel_out
         kernel_size = self.config.net_kernel_size
         pool_size = self.config.net_pool_size
