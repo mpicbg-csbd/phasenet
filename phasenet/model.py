@@ -117,6 +117,10 @@ class Config(BaseConfig):
         self.psf_na_detection          = 1.1
         self.psf_lam_detection         = 0.5
         self.psf_n                     = 1.33
+        self.noise_params              = {'mean':100, 'sigma':3.5, 'snr':(1.,5)}
+        self.phantom_name              = 'sphere' 
+        self.phantom_params            = {'radius':0.1} 
+        self.crop_params               = {'crop_shape':(32,32,32), 'jitter':True}
 
         self.train_loss                = 'mse'
         self.train_epochs              = 400
@@ -302,6 +306,10 @@ class PhaseNet(BaseModel):
             na_detection         = self.config.psf_na_detection,
             lam_detection        = self.config.psf_lam_detection,
             n                    = self.config.psf_n,
+            noise_params         = self.config.noise_params,
+            phantom_name         = self.config.phantom_name,
+            phantom_params       = self.config.phantom_params,
+            crop_params          = self.config.crop_params,
         )
 
         # generate validation data and store in numpy arrays
