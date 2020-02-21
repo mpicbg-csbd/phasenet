@@ -15,7 +15,7 @@ from csbdeep.models import BaseConfig, BaseModel
 from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
 from .noise import add_random_noise
-from .phantoms import PhantomGenerator3D
+from .phantoms import Sphere
 from .utils import cropper3D
 
 from scipy.signal import convolve
@@ -26,8 +26,8 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 snr=None, mean=None, sigma=None, 
-                 phantom_name=None, phantom_params=None, 
+                 noise_snr=None, noise_mean=None, noise_sigma=None, 
+                 phantom=None, 
                  crop_shape=None, jitter=False, max_jitter=None
                  ):
         """
@@ -42,8 +42,7 @@ class Data:
             :param snr: scalar or tuple, signal to noise ratio
             :param mean: scalar or tuple, mean background noise
             :param sigma: scalar or tuple, simga for gaussian noise 
-            :param phantom_name : string, phantom name
-            :param phantom_params : dictionary, parameters according to the phantom chosen
+            :param phantom : phantom object
             :param crop_shape: tuple, crop shape
             :param jitter: booelan, randomly move the center point within a given limit, default is False
             :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
@@ -54,23 +53,13 @@ class Data:
         self.normed = normed
         self.amplitude_ranges = ensure_dict(amplitude_ranges, order)
         self.batch_size = batch_size
-        self.snr = snr
-        self.sigma = sigma
-        self.mean = mean
+        self.snr = noise_snr
+        self.sigma = noise_sigma
+        self.mean = noise_mean
         self.crop_shape = crop_shape
         self.jitter = jitter
         self.max_jitter = max_jitter
-
-        if phantom_name is not None:
-            self.phantom_flag = True
-            isinstance(phantom_params,dict) or _raise(ValueError('phantom_params has to be a dictionary'))
-            self.phantom_params = phantom_params
-            self.phantom_shape = self.phantom_params.get('phantom_shape', psf_shape)
-            self.phantomgen = PhantomGenerator3D(self.phantom_shape, units)
-            self.phantom_name = phantom_name
-            self.phantom_img = self.phantomgen.get_phantom_img(self.phantom_name, self.phantom_params)
-        else:
-            self.phantom_flag=False
+        self.phantom = phantom
 
 
     def _single_psf(self):
@@ -78,8 +67,13 @@ class Data:
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
         
-        if self.phantom_flag:
-            psf = convolve(self.phantom_img, psf, mode='same') #TODO check with Martin
+        if self.phantom is not None:
+            self.phantom_flag = True
+            self.phantom.generate()
+            obj =  self.phantom.get()
+            psf = convolve(obj, psf, mode='same') #TODO check with Martin
+        else:
+            self.phantom_flag=False
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
@@ -166,11 +160,10 @@ class Config(BaseConfig):
         self.psf_na_detection          = 1.1
         self.psf_lam_detection         = 0.5
         self.psf_n                     = 1.33
-        self.mean                      = 100
-        self.sigma                     = 3.5
-        self.snr                       = (1.,5)
-        self.phantom_name              = 'sphere' 
-        self.phantom_params            = {'radius':0.1} 
+        self.noise_mean                = 100
+        self.noise_sigma               = 3.5
+        self.noise_snr                 = (1.,5)
+        self.phantom                   = None
         self.crop_shape                = (32,32,32)
         self.jitter                    = True
         self.max_jitter                = None
@@ -240,8 +233,8 @@ class PhaseNet(BaseModel):
 
     def _build(self):
 
-        if isinstance(self.config.crop_params,dict) and 'crop_shape' in self.config.crop_params:
-            _model_input_shape = self.config.crop_params.get('crop_shape')
+        if isinstance(self.config.crop_shape, tuple):
+            _model_input_shape = self.config.crop_shape
         else:
             _model_input_shape = self.config.psf_shape
         input_shape = tuple(_model_input_shape) + (self.config.n_channel_in,)
@@ -363,10 +356,13 @@ class PhaseNet(BaseModel):
             na_detection         = self.config.psf_na_detection,
             lam_detection        = self.config.psf_lam_detection,
             n                    = self.config.psf_n,
-            noise_params         = self.config.noise_params,
-            phantom_name         = self.config.phantom_name,
-            phantom_params       = self.config.phantom_params,
-            crop_params          = self.config.crop_params,
+            noise_snr            = self.config.noise_snr,
+            noise_mean           = self.config.noise_mean,
+            noise_sigma          = self.config.noise_sigma,
+            phantom              = self.config.phantom,
+            crop_shape           = self.config.crop_shape,
+            jitter               = self.config.jitter,
+            max_jitter           = self.config.max_jitter,
         )
 
         # generate validation data and store in numpy arrays
