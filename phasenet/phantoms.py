@@ -54,7 +54,7 @@ class Points(Phantoms3D):
         x[_i, _j, _k] = 1.
 
         self.phantom_obj = x
-        # self.check_sum_of_phantom_obj()
+        self.check_sum_of_phantom_obj()
 
     def get(self):
         self.check_sum_of_phantom_obj()
