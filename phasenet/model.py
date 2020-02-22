@@ -15,19 +15,22 @@ from csbdeep.models import BaseConfig, BaseModel
 from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
 from .noise import add_random_noise
-from .phantoms import Sphere
+from .phantoms import *
 from .utils import cropper3D
 
 from scipy.signal import convolve
+import inspect
 
 class Data:
 
+    _defined_phantom_objects =  {'points':Points,
+                                 'sphere':Sphere}
     def __init__(self,
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
                  noise_snr=None, noise_mean=None, noise_sigma=None, 
-                 phantom=None, 
+                 phantom_params=None, 
                  crop_shape=None, jitter=False, max_jitter=None
                  ):
         """
@@ -42,7 +45,7 @@ class Data:
             :param snr: scalar or tuple, signal to noise ratio
             :param mean: scalar or tuple, mean background noise
             :param sigma: scalar or tuple, simga for gaussian noise 
-            :param phantom : phantom object
+            :param phantom_params : dictionary, phantom name and parameters for that phantom
             :param crop_shape: tuple, crop shape
             :param jitter: booelan, randomly move the center point within a given limit, default is False
             :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
@@ -59,7 +62,41 @@ class Data:
         self.crop_shape = crop_shape
         self.jitter = jitter
         self.max_jitter = max_jitter
-        self.phantom = phantom
+        self.phantom_params = phantom_params
+        if self.phantom_params is not None:
+            self.phantom_flag = True
+            self.phantom_params.setdefault('shape', psf_shape)
+            self.phantom_params.setdefault('units', units)
+            try:
+                name = self.phantom_params.get('name')
+            except:
+                _raise(ValueError('phantom name not described'))
+            self.phantom_obj = self._get_phantom_object(name)
+        else:
+            self.phantom_flag=False
+
+    def update_phantom_objects(self, name, cl):
+
+        """
+            Update the dictionary of phantom objects
+
+            :param name: string, name of the object
+            :param cl: a class dervied from phantom3D class
+        """
+        self._defined_phantom_objects.update(dict(name,cl))
+
+    def _get_phantom_object(self, name):
+
+        if name in self._defined_phantom_objects.keys():
+            cl = self._defined_phantom_objects.get(name)
+            signature = inspect.signature(cl.__init__)
+            data_params = dict((k, self.phantom_params[k]) for k in signature.parameters.keys() if k in self.phantom_params) 
+            try:
+                return cl(**data_params)
+            except:
+                _raise(ValueError('phantom object could not be created'))
+        else:
+            _raise(ValueError("phantom object not registered"))
 
 
     def _single_psf(self):
@@ -67,13 +104,10 @@ class Data:
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
         
-        if self.phantom is not None:
-            self.phantom_flag = True
-            self.phantom.generate()
-            obj =  self.phantom.get()
+        if self.phantom_flag:
+            self.phantom_obj.generate()
+            obj =  self.phantom_obj.get()
             psf = convolve(obj, psf, mode='same') #TODO check with Martin
-        else:
-            self.phantom_flag=False
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
@@ -113,7 +147,6 @@ class Config(BaseConfig):
         :param net_pool_size: max pool kernel size, default is (1,2,2)
         :param net_activation: activation, default is 'tanh'
         :param net_padding: padding for convolution, default is 'same'
-        
         :param psf_shape: tuple, shpae of the psf, default is (64,64,64)
         :param psf_units: tuple, voxel unit (z,y,x) in um, default is (0.1,0.1,0.1)
         :param psf_na_detection: scalar, numerical apperture default is 1.1
@@ -122,8 +155,7 @@ class Config(BaseConfig):
         :param snr: scalar or tuple, signal to noise ratio
         :param mean: scalar or tuple, mean background noise
         :param sigma: scalar or tuple, simga for gaussian noise
-        :param phantom_name: string, name of convolving object, set to None if not needed, default is 'sphere' 
-        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'radius':0.1} 
+        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1} 
         :param crop_shape: tuple, crop shape
         :param jitter: booelan, randomly move the center point within a given limit, default is False
         :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
@@ -163,7 +195,7 @@ class Config(BaseConfig):
         self.noise_mean                = 100
         self.noise_sigma               = 3.5
         self.noise_snr                 = (1.,5)
-        self.phantom                   = None
+        self.phantom_params            = {'name':'points', 'num':1}
         self.crop_shape                = (32,32,32)
         self.jitter                    = True
         self.max_jitter                = None
@@ -359,7 +391,7 @@ class PhaseNet(BaseModel):
             noise_snr            = self.config.noise_snr,
             noise_mean           = self.config.noise_mean,
             noise_sigma          = self.config.noise_sigma,
-            phantom              = self.config.phantom,
+            phantom_params       = self.config.phantom_params,
             crop_shape           = self.config.crop_shape,
             jitter               = self.config.jitter,
             max_jitter           = self.config.max_jitter,
