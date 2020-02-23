@@ -9,7 +9,7 @@ from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import ReduceLROnPlateau, TensorBoard
 
-from csbdeep.utils import _raise, axes_check_and_normalize
+from csbdeep.utils import _raise, axes_check_and_normalize, normalize
 from csbdeep.models import BaseConfig, BaseModel
 
 from .psf import PsfGenerator3D
@@ -129,7 +129,9 @@ class Data:
     def generator(self):
         while True:
             psfs, amplitudes = zip(*(self._single_psf() for _ in range(self.batch_size)))
+
             X = np.expand_dims(np.stack(psfs, axis=0), -1)
+            X = np.array([normalize(_x) for _x in X])
             Y = np.stack(amplitudes, axis=0)
             yield X, Y
 
