@@ -15,16 +15,14 @@ from csbdeep.models import BaseConfig, BaseModel
 from .psf import PsfGenerator3D
 from .zernike import random_zernike_wavefront, ensure_dict
 from .noise import add_random_noise
-from .phantoms import *
+from .phantoms import Phantom3D
 from .utils import cropper3D
 
 from scipy.signal import convolve
-import inspect
+
 
 class Data:
 
-    _defined_phantom_objects =  {'points':Points,
-                                 'sphere':Sphere}
     def __init__(self,
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
@@ -64,39 +62,11 @@ class Data:
         self.max_jitter = max_jitter
         self.phantom_params = phantom_params
         if self.phantom_params is not None:
-            self.phantom_flag = True
             self.phantom_params.setdefault('shape', psf_shape)
             self.phantom_params.setdefault('units', units)
-            try:
-                name = self.phantom_params.get('name')
-            except:
-                _raise(ValueError('phantom name not described'))
-            self.phantom_obj = self._get_phantom_object(name)
+            self.phantom = Phantom3D.instantiate(**self.phantom_params)
         else:
-            self.phantom_flag=False
-
-    def update_phantom_objects(self, name, cl):
-
-        """
-            Update the dictionary of phantom objects
-
-            :param name: string, name of the object
-            :param cl: a class dervied from phantom3D class
-        """
-        self._defined_phantom_objects.update(dict(name,cl))
-
-    def _get_phantom_object(self, name):
-
-        if name in self._defined_phantom_objects.keys():
-            cl = self._defined_phantom_objects.get(name)
-            signature = inspect.signature(cl.__init__)
-            data_params = dict((k, self.phantom_params[k]) for k in signature.parameters.keys() if k in self.phantom_params) 
-            try:
-                return cl(**data_params)
-            except:
-                _raise(ValueError('phantom object could not be created'))
-        else:
-            _raise(ValueError("phantom object not registered"))
+            self.phantom = None
 
 
     def _single_psf(self):
@@ -104,11 +74,12 @@ class Data:
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
         psf = np.fft.fftshift(psf)
         
-        if self.phantom_flag:
-            self.phantom_obj.generate()
-            obj =  self.phantom_obj.get()
+        if self.phantom is not None:
+            self.phantom.generate()
+            obj =  self.phantom.get()
             psf = convolve(obj, psf, mode='same') #TODO check with Martin
 
+        # all the checks should be in the constructor
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
             psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
@@ -129,9 +100,8 @@ class Data:
     def generator(self):
         while True:
             psfs, amplitudes = zip(*(self._single_psf() for _ in range(self.batch_size)))
-
+            psfs = [normalize(psf) for psf in psfs]
             X = np.expand_dims(np.stack(psfs, axis=0), -1)
-            X = np.array([normalize(_x) for _x in X])
             Y = np.stack(amplitudes, axis=0)
             yield X, Y
 

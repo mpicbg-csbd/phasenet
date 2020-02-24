@@ -3,15 +3,35 @@ import numpy as np
 import random
 import warnings
 from abc import ABC, abstractmethod
+import inspect
 
 
-class Phantoms3D(ABC):
+
+class Phantom3D(ABC):
+
+    _registered = {}
+
+    @classmethod
+    def register(cls, subclass):
+        issubclass(subclass, cls) or _raise(ValueError("not a subclass"))
+        cls._registered[subclass.__name__.lower()] = subclass
+
+    @classmethod
+    def instantiate(cls, **kwargs):
+        'name' in kwargs or _raise(ValueError("name mising"))
+        name = str(kwargs['name']).lower()
+        name in cls._registered or _raise(ValueError("phantom not registered"))
+        subclass = cls._registered[name]
+        init_keys = inspect.signature(subclass.__init__).parameters.keys()
+        init_kwargs = {k:kwargs[k] for k in init_keys if k != 'name' and k in kwargs}
+        return subclass(**init_kwargs)
 
     def __init__(self, shape):
         self.shape=shape
         len(self.shape)==3 or _raise(ValueError("Only 3D phantoms are supported"))
         self.phantom_obj = np.zeros(self.shape)
 
+    # rename this function
     def check_sum_of_phantom_obj(self):
         if np.sum(self.phantom_obj) <= 0:
             warnings.warn("No object created")
@@ -25,7 +45,8 @@ class Phantoms3D(ABC):
         pass
 
 
-class Points(Phantoms3D):
+
+class Points(Phantom3D):
 
     """
         creates multiple points
@@ -62,7 +83,7 @@ class Points(Phantoms3D):
 
 
 
-class Sphere(Phantoms3D):
+class Sphere(Phantom3D):
 
     """
         creates 3D sphere
@@ -102,3 +123,8 @@ class Sphere(Phantoms3D):
     def get(self):
         self.check_sum_of_phantom_obj()
         return self.phantom_obj
+
+
+
+Phantom3D.register(Points)
+Phantom3D.register(Sphere)
