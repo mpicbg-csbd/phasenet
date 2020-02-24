@@ -413,7 +413,11 @@ class PhaseNet(BaseModel):
 
         _permute_axes = self._make_permute_axes(axes, axes_net)
         x = _permute_axes(img) # x has axes_net semantics
-        x.shape == tuple(self.config.psf_shape) + (self.config.n_channel_in,) or _raise(ValueError())
+        if self.config.crop_shape is not None:
+            _model_input_shape = self.config.crop_shape
+        else:
+            _model_input_shape = self.config.psf_shape
+        x.shape == tuple(_model_input_shape) + (self.config.n_channel_in,) or _raise(ValueError())
 
         normalizer = self._check_normalizer_resizer(normalizer, None)[0]
         x = normalizer.before(x, axes_net)
