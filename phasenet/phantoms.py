@@ -32,7 +32,7 @@ class Phantom3D(ABC):
         self.phantom_obj = np.zeros(self.shape)
 
     # rename this function
-    def check_sum_of_phantom_obj(self):
+    def check_phantom_obj(self):
         if np.sum(self.phantom_obj) <= 0:
             warnings.warn("No object created")
 
@@ -75,10 +75,10 @@ class Points(Phantom3D):
         x[_i, _j, _k] = 1.
 
         self.phantom_obj = x
-        self.check_sum_of_phantom_obj()
+        self.check_phantom_obj()
 
     def get(self):
-        self.check_sum_of_phantom_obj()
+        self.check_phantom_obj()
         return self.phantom_obj
 
 
@@ -118,10 +118,10 @@ class Sphere(Phantom3D):
         mask = 1.*(R<=self.radius)
 
         self.phantom_obj = mask
-        self.check_sum_of_phantom_obj()
+        self.check_phantom_obj()
     
     def get(self):
-        self.check_sum_of_phantom_obj()
+        self.check_phantom_obj()
         return self.phantom_obj
 
 
