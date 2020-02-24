@@ -140,10 +140,13 @@ class Zernike:
     def __init__(self, index, order='noll'):
         super().__setattr__('_mutable', True)
         if isinstance(index,str):
-            name = index.lower()
-            name in self._ansi_names or _raise(ValueError("Your input for index is string : Could not identify the name of Zernike polynomial"))
-            index = self._ansi_names.index(name)
-            order = 'ansi'
+            if index.isdigit():
+                index = int(index)
+            else:
+                name = index.lower()
+                name in self._ansi_names or _raise(ValueError("Your input for index is string : Could not identify the name of Zernike polynomial"))
+                index = self._ansi_names.index(name)
+                order = 'ansi'
 
         if isinstance(index,(list,tuple)) and len(index)==2:
             self.n, self.m = int(index[0]), int(index[1])
