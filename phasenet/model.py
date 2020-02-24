@@ -237,7 +237,9 @@ class PhaseNet(BaseModel):
 
     def _build(self):
 
-        if isinstance(self.config.crop_shape, tuple):
+        # all tuples will be lists when config is loaded back from json!
+        # if isinstance(self.config.crop_shape, tuple):
+        if self.config.crop_shape is not None:
             _model_input_shape = self.config.crop_shape
         else:
             _model_input_shape = self.config.psf_shape
