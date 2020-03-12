@@ -1,6 +1,5 @@
 import numpy as np
 from csbdeep.utils import _raise
-from myfftw import MyFFTW
 
 
 
@@ -61,16 +60,12 @@ class PsfGenerator3D:
         self.kphi = np.arctan2(KY2, KX2)
         self.kmask2 = (KR2 <= self.kcut)
 
-        # TODO: replace MyFFTW with standard fft library
-        # fft routines....
-        self.FFTW = MyFFTW(psf_shape, n_threads=n_threads)
-
-        self.myfftn = self.FFTW.fftn
-        self.myifftn = self.FFTW.ifftn
-        self.myrfftn = self.FFTW.rfftn
-        self.myirfftn = self.FFTW.irfftn
-        self.myzfftn = self.FFTW.zfftn
-        self.myzifftn = self.FFTW.zifftn
+        # self.myfftn = np.fft.fftn
+        # self.myifftn = np.fft.ifftn
+        # self.myrfftn = np.fft.rfftn
+        # self.myirfftn = np.fft.irfftn
+        # self.myzfftn = lambda x: np.fft.fftn(x,axes=(1,2))
+        self.myzifftn = lambda x: np.fft.ifftn(x,axes=(1,2))
 
 
     def masked_phase_array(self, phi, normed=True):
