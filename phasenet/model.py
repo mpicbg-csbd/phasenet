@@ -27,8 +27,8 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_snr=None, noise_mean=None, noise_sigma=None, 
-                 phantom_params=None, 
+                 noise_snr=None, noise_mean=None, noise_sigma=None,
+                 phantom_params=None,
                  crop_shape=None, jitter=False, max_jitter=None
                  ):
         """
@@ -42,7 +42,7 @@ class Data:
             :param n_threads: integer, for multiprocessing
             :param snr: scalar or tuple, signal to noise ratio
             :param mean: scalar or tuple, mean background noise
-            :param sigma: scalar or tuple, simga for gaussian noise 
+            :param sigma: scalar or tuple, simga for gaussian noise
             :param phantom_params : dictionary, phantom name and parameters for that phantom
             :param crop_shape: tuple, crop shape
             :param jitter: booelan, randomly move the center point within a given limit, default is False
@@ -72,8 +72,7 @@ class Data:
     def _single_psf(self):
         phi = random_zernike_wavefront(self.amplitude_ranges, order=self.order)
         psf = self.psfgen.incoherent_psf(phi, normed=self.normed)
-        psf = np.fft.fftshift(psf)
-        
+
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
@@ -87,13 +86,13 @@ class Data:
             self.noise_flag = False
             if self.snr is not None or self.sigma is not None or self.mean is not None:
                 warnings.warn("No noise added")
-        
+
         if self.crop_shape is not None:
             self.crop_flag = True
             psf = cropper3D(psf, self.crop_shape, jitter=self.jitter, max_jitter=self.max_jitter)
         else:
             self.crop_flag =  False
-        
+
         return psf, phi.amplitudes_requested
 
 
@@ -110,8 +109,8 @@ class Data:
 class Config(BaseConfig):
     """
         Configuration for phasenet models
-        
-        :param zernike_amplitude_ranges: dictionary or list, the values should either a scalar indicating the absolute magnitude 
+
+        :param zernike_amplitude_ranges: dictionary or list, the values should either a scalar indicating the absolute magnitude
                 or a tuple with upper and lower bound, default is {'vertical coma': (-0.2,0.2)}
         :param zernike_order: string, zernike nomeclature used when the amplitude ranges are given as a list, default is 'noll'
         :param zernike_normed: booelan, whether the zzernikes are normalized according, default is True
@@ -127,7 +126,7 @@ class Config(BaseConfig):
         :param snr: scalar or tuple, signal to noise ratio
         :param mean: scalar or tuple, mean background noise
         :param sigma: scalar or tuple, simga for gaussian noise
-        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1} 
+        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1}
         :param crop_shape: tuple, crop shape
         :param jitter: booelan, randomly move the center point within a given limit, default is False
         :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
@@ -136,7 +135,7 @@ class Config(BaseConfig):
         :param train_steps_per_epoch: integer, number of steps per epoch, default is 5
         :param train_learning_rate: scalar, leaning rate, default is 0.0003
         :param train_batch_size: integer, batch size for training the network, default is 8
-        :param train_n_val: integer, number of validation data, default is 128 
+        :param train_n_val: integer, number of validation data, default is 128
         :param train_tensorboard: boolean, create tensorboard, default is True
 
     """

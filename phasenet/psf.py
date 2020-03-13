@@ -91,7 +91,7 @@ class PsfGenerator3D:
         res = self.myzifftn(ku)
         return np.fft.fftshift(res, axes=(0,))
 
-    def incoherent_psf(self, phi, normed=True, fftshift=False):
+    def incoherent_psf(self, phi, normed=True):
         """
         returns the incoherent psf for a given wavefront phi
            (which is just the squared absolute value of the coherent one)
