@@ -13,5 +13,8 @@ setup (
     description='PhaseNet',
     license='BSD 3-Clause License',
     packages=find_packages(),
-    python_requires='>=3.6'
+    python_requires='>=3.6',
+    install_requires=[
+        'csbdeep>=0.4.0',
+    ],
 )
