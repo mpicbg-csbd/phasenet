@@ -79,7 +79,7 @@ class PsfGenerator3D:
         return self.kmask2 * phi.phase(self.krho, self.kphi, normed=normed, outside=None)
 
 
-    def coherent_psf(self, phi, normed=True, fftshift=False):
+    def coherent_psf(self, phi, normed=True):
         """
         returns the coherent psf for a given wavefront phi
 
@@ -89,8 +89,6 @@ class PsfGenerator3D:
         phi = self.masked_phase_array(phi, normed=normed)
         ku = self.kbase * np.exp(2.j * np.pi * phi / self.lam_detection)
         res = self.myzifftn(ku)
-        # TODO: fftshift psf correctly such that centered in spatial domain
-        assert fftshift==False
         return np.fft.fftshift(res, axes=(0,))
 
     def incoherent_psf(self, phi, normed=True, fftshift=False):
@@ -102,6 +100,6 @@ class PsfGenerator3D:
         :param phi: Zernike/ZernikeWavefront object
         :return: incoherent psf, 3d array
         """
-        _psf = np.abs(self.coherent_psf(phi, normed=normed, fftshift=fftshift)) ** 2
+        _psf = np.abs(self.coherent_psf(phi, normed=normed)) ** 2
         _psf = np.array([p/np.sum(p) for p in _psf])
-        return _psf
+        return np.fft.fftshift(_psf)
