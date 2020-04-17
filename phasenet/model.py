@@ -19,6 +19,7 @@ from .phantoms import Phantom3D
 from .utils import cropper3D
 
 from scipy.signal import convolve
+from scipy.ndimage.filters import gaussian_filter
 
 
 class Data:
@@ -27,7 +28,7 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_snr=None, noise_mean=None, noise_sigma=None,
+                 noise_snr=None, noise_mean=None, noise_sigma=None, gaussian_blur_sigma=None,
                  phantom_params=None,
                  crop_shape=None, jitter=False, max_jitter=None
                  ):
@@ -57,6 +58,7 @@ class Data:
         self.snr = noise_snr
         self.sigma = noise_sigma
         self.mean = noise_mean
+        self.gaussian_blur_sigma = gaussian_blur_sigma
         self.crop_shape = crop_shape
         self.jitter = jitter
         self.max_jitter = max_jitter
@@ -82,6 +84,10 @@ class Data:
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
             psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
+            if self.gaussian_blur_sigma is not None:
+                gaussian_blur = (gaussian_blur_sigma, gaussian_blur_sigma) if np.isscalar(gaussian_blur_sigma) else gaussian_blur_sigma
+                gaussian_blur = np.random.uniform(*gaussian_blur)
+                psf = gaussian_filter(psf,gaussian_blur)
         else:
             self.noise_flag = False
             if self.snr is not None or self.sigma is not None or self.mean is not None:
@@ -166,6 +172,7 @@ class Config(BaseConfig):
         self.noise_mean                = 100
         self.noise_sigma               = 3.5
         self.noise_snr                 = (1.,5)
+        self.gaussian_blur_sigma       = (0.5,1)
         self.phantom_params            = {'name':'points', 'num':1}
         self.crop_shape                = (32,32,32)
         self.jitter                    = True
@@ -235,7 +242,6 @@ class PhaseNet(BaseModel):
 
 
     def _build(self):
-
         if self.config.crop_shape is not None:
             _model_input_shape = self.config.crop_shape
         else:
@@ -259,9 +265,9 @@ class PhaseNet(BaseModel):
         t = MaxPooling3D(name='maxpool3', pool_size=pool_size)(t)
         t = Conv3D(64, name='conv7', kernel_size=kernel_size, activation=activation, padding=padding)(t)
         t = Conv3D(64, name='conv8', kernel_size=kernel_size, activation=activation, padding=padding)(t)
-        t = MaxPooling3D(name='maxpool4', pool_size=pool_size)(t)
-        t = Conv3D(128, name='conv9', kernel_size=kernel_size, activation=activation, padding=padding)(t)
-        t = Conv3D(128, name='conv10', kernel_size=kernel_size, activation=activation, padding=padding)(t)
+        # t = MaxPooling3D(name='maxpool4', pool_size=pool_size)(t)
+        # t = Conv3D(128, name='conv9', kernel_size=kernel_size, activation=activation, padding=padding)(t)
+        # t = Conv3D(128, name='conv10', kernel_size=kernel_size, activation=activation, padding=padding)(t)
 
         if input_shape[0] == 1:
             t = MaxPooling3D(name='maxpool5', pool_size=(1, 2, 2))(t)
@@ -362,6 +368,7 @@ class PhaseNet(BaseModel):
             noise_snr            = self.config.noise_snr,
             noise_mean           = self.config.noise_mean,
             noise_sigma          = self.config.noise_sigma,
+            gaussian_blur_sigma  = self.config.gaussian_blur_sigma,
             phantom_params       = self.config.phantom_params,
             crop_shape           = self.config.crop_shape,
             jitter               = self.config.jitter,
