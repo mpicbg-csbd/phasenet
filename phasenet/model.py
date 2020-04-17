@@ -85,7 +85,7 @@ class Data:
             self.noise_flag = True
             psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
             if self.gaussian_blur_sigma is not None:
-                gaussian_blur = (gaussian_blur_sigma, gaussian_blur_sigma) if np.isscalar(gaussian_blur_sigma) else gaussian_blur_sigma
+                gaussian_blur = (self.gaussian_blur_sigma, self.gaussian_blur_sigma) if np.isscalar(self.gaussian_blur_sigma) else self.gaussian_blur_sigma
                 gaussian_blur = np.random.uniform(*gaussian_blur)
                 psf = gaussian_filter(psf,gaussian_blur)
         else:
