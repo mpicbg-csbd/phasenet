@@ -265,9 +265,9 @@ class PhaseNet(BaseModel):
         t = MaxPooling3D(name='maxpool3', pool_size=pool_size)(t)
         t = Conv3D(64, name='conv7', kernel_size=kernel_size, activation=activation, padding=padding)(t)
         t = Conv3D(64, name='conv8', kernel_size=kernel_size, activation=activation, padding=padding)(t)
-        # t = MaxPooling3D(name='maxpool4', pool_size=pool_size)(t)
-        # t = Conv3D(128, name='conv9', kernel_size=kernel_size, activation=activation, padding=padding)(t)
-        # t = Conv3D(128, name='conv10', kernel_size=kernel_size, activation=activation, padding=padding)(t)
+        t = MaxPooling3D(name='maxpool4', pool_size=pool_size)(t)
+        t = Conv3D(128, name='conv9', kernel_size=kernel_size, activation=activation, padding=padding)(t)
+        t = Conv3D(128, name='conv10', kernel_size=kernel_size, activation=activation, padding=padding)(t)
 
         if input_shape[0] == 1:
             t = MaxPooling3D(name='maxpool5', pool_size=(1, 2, 2))(t)
