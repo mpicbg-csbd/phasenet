@@ -41,9 +41,10 @@ class Data:
             :param n: scalar, refractive index, eg 1.33
             :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
             :param n_threads: integer, for multiprocessing
-            :param snr: scalar or tuple, signal to noise ratio
-            :param mean: scalar or tuple, mean background noise
-            :param sigma: scalar or tuple, simga for gaussian noise
+            :param noise_snr: scalar or tuple, signal to noise ratio
+            :param noise_mean: scalar or tuple, mean background noise
+            :param noise_sigma: scalar or tuple, simga for gaussian noise
+            :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
             :param phantom_params : dictionary, phantom name and parameters for that phantom
             :param crop_shape: tuple, crop shape
             :param jitter: booelan, randomly move the center point within a given limit, default is False
@@ -129,9 +130,10 @@ class Config(BaseConfig):
         :param psf_na_detection: scalar, numerical apperture default is 1.1
         :param psf_lam_detection: scalar, wavelength in um, default is 0.5
         :param psf_n: scalar, refractive index of immersion medium, default is 1.33
-        :param snr: scalar or tuple, signal to noise ratio
-        :param mean: scalar or tuple, mean background noise
-        :param sigma: scalar or tuple, simga for gaussian noise
+        :param noise_snr: scalar or tuple, signal to noise ratio
+        :param noise_mean: scalar or tuple, mean background noise
+        :param noise_sigma: scalar or tuple, simga for gaussian noise
+        :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
         :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1}
         :param crop_shape: tuple, crop shape
         :param jitter: booelan, randomly move the center point within a given limit, default is False
@@ -172,7 +174,7 @@ class Config(BaseConfig):
         self.noise_mean                = 100
         self.noise_sigma               = 3.5
         self.noise_snr                 = (1.,5)
-        self.gaussian_blur_sigma       = (0.5,1)
+        self.gaussian_blur_sigma       = None
         self.phantom_params            = {'name':'points', 'num':1}
         self.crop_shape                = (32,32,32)
         self.jitter                    = True
