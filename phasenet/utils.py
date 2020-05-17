@@ -1,7 +1,7 @@
 from csbdeep.utils import _raise
 import random
 
-def cropper3D(image, crop_shape, jitter=False, max_jitter=None):
+def cropper3D(image, crop_shape, jitter=False, max_jitter=None, planes=None):
 
 	"""
         crops 3d images
@@ -12,9 +12,13 @@ def cropper3D(image, crop_shape, jitter=False, max_jitter=None):
         :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
 	"""
 
-	half_crop_shape = tuple(c//2 for c in crop_shape)
+	if planes is None:
+		half_crop_shape = tuple(c//2 for c in crop_shape)
+	else:
+		half_crop_shape = tuple((crop_shape[-1]//2,crop_shape[-1]//2,crop_shape[-1]//2))
+
 	half_image_shape = tuple(i//2 for i in image.shape)
-	assert all([c<l for c,l in zip(half_crop_shape,half_image_shape)]), "Crop shape is bigger than equal to image shape"
+	assert all([c<=l for c,l in zip(half_crop_shape,half_image_shape)]), "Crop shape is bigger than image shape"
 
 	if jitter:
 		contraint_1 = tuple((l-c)//4 for c,l in zip(half_crop_shape,half_image_shape))
@@ -26,5 +30,14 @@ def cropper3D(image, crop_shape, jitter=False, max_jitter=None):
 		loc = tuple(l-random.randint(-1*max_jitter[i],max_jitter[i]) for i,l in enumerate(half_image_shape))
 	else:
 		loc=half_image_shape
-	return image[loc[0]-half_crop_shape[0]:loc[0]+half_crop_shape[0], loc[1]-half_crop_shape[1]:loc[1]+half_crop_shape[1], loc[2]-half_crop_shape[2]:loc[2]+half_crop_shape[2]]
+
+	final_img = image[loc[0]-half_crop_shape[0]:loc[0]+half_crop_shape[0], loc[1]-half_crop_shape[1]:loc[1]+half_crop_shape[1], loc[2]-half_crop_shape[2]:loc[2]+half_crop_shape[2]]
+
+	if planes is not None:
+		try:
+			final_img = final_img[planes+half_crop_shape[0]]
+		except:
+			_raise(ValueError("Plane does not exist"))
+
+	return final_img 
 
