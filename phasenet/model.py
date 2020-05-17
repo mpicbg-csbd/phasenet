@@ -30,7 +30,8 @@ class Data:
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
                  noise_snr=None, noise_mean=None, noise_sigma=None, gaussian_blur_sigma=None,
                  phantom_params=None,
-                 crop_shape=None, jitter=False, max_jitter=None
+                 crop_shape=None, jitter=False, max_jitter=None,
+                 planes=None
                  ):
         """
             Encapsulates data gerenation
@@ -49,6 +50,7 @@ class Data:
             :param crop_shape: tuple, crop shape
             :param jitter: booelan, randomly move the center point within a given limit, default is False
             :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
+            :param planes: list, z planes with respect to center, if None then it takes all the planes
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
@@ -60,7 +62,15 @@ class Data:
         self.sigma = noise_sigma
         self.mean = noise_mean
         self.gaussian_blur_sigma = gaussian_blur_sigma
-        self.crop_shape = crop_shape
+        if planes is not None:
+            self.planes = np.array(planes)
+            if crop_shape is None:
+                self.crop_shape = tuple((self.planes.shape[0],psf_shape[1],psf_shape[2]))
+            else:
+                self.crop_shape = tuple((self.planes.shape[0],crop_shape[1],crop_shape[2]))
+        else:
+            self.planes = planes
+            self.crop_shape = crop_shape
         self.jitter = jitter
         self.max_jitter = max_jitter
         self.phantom_params = phantom_params
@@ -79,7 +89,7 @@ class Data:
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
-            psf = convolve(obj, psf, mode='same') #TODO check with Martin
+            psf = convolve(obj, psf, mode='same') 
 
         # all the checks should be in the constructor
         if self.snr is not None and self.sigma is not None and self.mean is not None:
@@ -96,7 +106,7 @@ class Data:
 
         if self.crop_shape is not None:
             self.crop_flag = True
-            psf = cropper3D(psf, self.crop_shape, jitter=self.jitter, max_jitter=self.max_jitter)
+            psf = cropper3D(psf, self.crop_shape, jitter=self.jitter, max_jitter=self.max_jitter, planes=self.planes)
         else:
             self.crop_flag =  False
 
@@ -145,6 +155,7 @@ class Config(BaseConfig):
         :param train_batch_size: integer, batch size for training the network, default is 8
         :param train_n_val: integer, number of validation data, default is 128
         :param train_tensorboard: boolean, create tensorboard, default is True
+        :param planes: list, z planes with respect to center, if None then it takes all the planes
 
     """
 
@@ -179,6 +190,7 @@ class Config(BaseConfig):
         self.crop_shape                = (32,32,32)
         self.jitter                    = True
         self.max_jitter                = None
+        self.planes                    = None
 
         self.train_loss                = 'mse'
         self.train_epochs              = 400
@@ -199,6 +211,17 @@ class Config(BaseConfig):
         self.update_parameters(False, **kwargs)
 
         self.n_channel_out = len(random_zernike_wavefront(self.zernike_amplitude_ranges))
+
+        if self.planes is not None:
+            _p = np.array(self.planes)
+            if self.crop_shape is None:
+                self.model_input_shape = tuple((_p.shape[0],self.psf_shape[1],self.psf_shape[2]))
+            else:
+                self.model_input_shape = tuple((_p.shape[0],self.crop_shape[1],self.crop_shape[2]))
+        elif self.crop_shape is not None:
+            self.model_input_shape = self.crop_shape
+        else :
+            self.model_input_shape = self.psf_shape
 
 
 class PhaseNet(BaseModel):
@@ -244,11 +267,8 @@ class PhaseNet(BaseModel):
 
 
     def _build(self):
-        if self.config.crop_shape is not None:
-            _model_input_shape = self.config.crop_shape
-        else:
-            _model_input_shape = self.config.psf_shape
-        input_shape = tuple(_model_input_shape) + (self.config.n_channel_in,)
+
+        input_shape = tuple(self.config.model_input_shape) + (self.config.n_channel_in,)
         output_size = self.config.n_channel_out
         kernel_size = self.config.net_kernel_size
         pool_size = self.config.net_pool_size
@@ -375,6 +395,7 @@ class PhaseNet(BaseModel):
             crop_shape           = self.config.crop_shape,
             jitter               = self.config.jitter,
             max_jitter           = self.config.max_jitter,
+            planes               = self.config.planes,
         )
 
         # generate validation data and store in numpy arrays
@@ -419,13 +440,9 @@ class PhaseNet(BaseModel):
 
         _permute_axes = self._make_permute_axes(axes, axes_net)
         x = _permute_axes(img) # x has axes_net semantics
-        if self.config.crop_shape is not None:
-            _model_input_shape = self.config.crop_shape
-        else:
-            _model_input_shape = self.config.psf_shape
-        x.shape == tuple(_model_input_shape) + (self.config.n_channel_in,) or _raise(ValueError())
+        x.shape == tuple(self.config.model_input_shape) + (self.config.n_channel_in,) or _raise(ValueError())
 
         normalizer = self._check_normalizer_resizer(normalizer, None)[0]
         x = normalizer.before(x, axes_net)
 
-        return self.keras_model.predict(x[np.newaxis], **predict_kwargs)[0,0]
+        return self.keras_model.predict(x[np.newaxis], **predict_kwargs)[0]
