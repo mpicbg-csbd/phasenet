@@ -60,11 +60,6 @@ class PsfGenerator3D:
         self.kphi = np.arctan2(KY2, KX2)
         self.kmask2 = (KR2 <= self.kcut)
 
-        # self.myfftn = np.fft.fftn
-        # self.myifftn = np.fft.ifftn
-        # self.myrfftn = np.fft.rfftn
-        # self.myirfftn = np.fft.irfftn
-        # self.myzfftn = lambda x: np.fft.fftn(x,axes=(1,2))
         self.myzifftn = lambda x: np.fft.ifftn(x,axes=(1,2))
 
 
