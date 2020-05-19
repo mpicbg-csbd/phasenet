@@ -19,7 +19,7 @@ def add_normal_poisson_noise(image, mean, sigma, snr):
     noisy_img = normal_noise_img + poisson_noise_img
     return noisy_img
 
-# as discussed, make this return a function that can repeatedly been applied to an image to make it noisy
+# TODO: Make this return a function that can repeatedly been applied to an image to make it noisy
 def add_random_noise(image, snr, mean, sigma, rng=None):
     """
         add gaussian and poisson noise to the system

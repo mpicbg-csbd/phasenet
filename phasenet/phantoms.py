@@ -31,7 +31,7 @@ class Phantom3D(ABC):
         len(self.shape)==3 or _raise(ValueError("Only 3D phantoms are supported"))
         self.phantom_obj = np.zeros(self.shape)
 
-    # rename this function
+    # TODO: rename this function
     def check_phantom_obj(self):
         if np.sum(self.phantom_obj) <= 0:
             warnings.warn("No object created")
