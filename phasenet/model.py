@@ -33,24 +33,23 @@ class Data:
                  crop_shape=None, jitter=False, max_jitter=None,
                  planes=None
                  ):
-        """
-            Encapsulates data gerenation
+        """Encapsulates data gerenation
 
-            :param psf_shape: tuple, shape of psf, eg (32,32,32)
-            :param units: tuple, units in microns, eg (0.1,0.1,0.1)
-            :param lam_detection: scalar, wavelength in micrometer, eg 0.5
-            :param n: scalar, refractive index, eg 1.33
-            :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
-            :param n_threads: integer, for multiprocessing
-            :param noise_snr: scalar or tuple, signal to noise ratio
-            :param noise_mean: scalar or tuple, mean background noise
-            :param noise_sigma: scalar or tuple, simga for gaussian noise
-            :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
-            :param phantom_params : dictionary, phantom name and parameters for that phantom
-            :param crop_shape: tuple, crop shape
-            :param jitter: booelan, randomly move the center point within a given limit, default is False
-            :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
-            :param planes: list, z planes with respect to center, if None then it takes all the planes
+        :param psf_shape: tuple, shape of psf, eg (32,32,32)
+        :param units: tuple, units in microns, eg (0.1,0.1,0.1)
+        :param lam_detection: scalar, wavelength in micrometer, eg 0.5
+        :param n: scalar, refractive index, eg 1.33
+        :param na_detection: scalar, numerical aperture of detection objective, eg 1.1
+        :param n_threads: integer, for multiprocessing
+        :param noise_snr: scalar or tuple, signal to noise ratio
+        :param noise_mean: scalar or tuple, mean background noise
+        :param noise_sigma: scalar or tuple, simga for gaussian noise
+        :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
+        :param phantom_params : dictionary, phantom name and parameters for that phantom
+        :param crop_shape: tuple, crop shape
+        :param jitter: booelan, randomly move the center point within a given limit, default is False
+        :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
+        :param planes: list, z planes with respect to center, if None then it takes all the planes
         """
 
         self.psfgen = PsfGenerator3D(psf_shape=psf_shape, units=units, lam_detection=lam_detection, n=n, na_detection=na_detection, n_threads=n_threads)
@@ -89,7 +88,7 @@ class Data:
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
-            psf = convolve(obj, psf, mode='same') 
+            psf = convolve(obj, psf, mode='same')
 
         # all the checks should be in the constructor
         if self.snr is not None and self.sigma is not None and self.mean is not None:
@@ -124,38 +123,37 @@ class Data:
 
 
 class Config(BaseConfig):
-    """
-        Configuration for phasenet models
+    """Configuration for phasenet models
 
-        :param zernike_amplitude_ranges: dictionary or list, the values should either a scalar indicating the absolute magnitude
-                or a tuple with upper and lower bound, default is {'vertical coma': (-0.2,0.2)}
-        :param zernike_order: string, zernike nomeclature used when the amplitude ranges are given as a list, default is 'noll'
-        :param zernike_normed: booelan, whether the zzernikes are normalized according, default is True
-        :param net_kernel_size: convoltuion kernel size, default is (3,3,3)
-        :param net_pool_size: max pool kernel size, default is (1,2,2)
-        :param net_activation: activation, default is 'tanh'
-        :param net_padding: padding for convolution, default is 'same'
-        :param psf_shape: tuple, shpae of the psf, default is (64,64,64)
-        :param psf_units: tuple, voxel unit (z,y,x) in um, default is (0.1,0.1,0.1)
-        :param psf_na_detection: scalar, numerical apperture default is 1.1
-        :param psf_lam_detection: scalar, wavelength in um, default is 0.5
-        :param psf_n: scalar, refractive index of immersion medium, default is 1.33
-        :param noise_snr: scalar or tuple, signal to noise ratio
-        :param noise_mean: scalar or tuple, mean background noise
-        :param noise_sigma: scalar or tuple, simga for gaussian noise
-        :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
-        :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1}
-        :param crop_shape: tuple, crop shape
-        :param jitter: booelan, randomly move the center point within a given limit, default is False
-        :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
-        :param train_loss: string, training loss, default is 'mse'
-        :param train_epochs: integer, number of epochs for trianing, default is 400
-        :param train_steps_per_epoch: integer, number of steps per epoch, default is 5
-        :param train_learning_rate: scalar, leaning rate, default is 0.0003
-        :param train_batch_size: integer, batch size for training the network, default is 8
-        :param train_n_val: integer, number of validation data, default is 128
-        :param train_tensorboard: boolean, create tensorboard, default is True
-        :param planes: list, z planes with respect to center, if None then it takes all the planes
+    :param zernike_amplitude_ranges: dictionary or list, the values should either a scalar indicating the absolute magnitude
+            or a tuple with upper and lower bound, default is {'vertical coma': (-0.2,0.2)}
+    :param zernike_order: string, zernike nomeclature used when the amplitude ranges are given as a list, default is 'noll'
+    :param zernike_normed: booelan, whether the zzernikes are normalized according, default is True
+    :param net_kernel_size: convoltuion kernel size, default is (3,3,3)
+    :param net_pool_size: max pool kernel size, default is (1,2,2)
+    :param net_activation: activation, default is 'tanh'
+    :param net_padding: padding for convolution, default is 'same'
+    :param psf_shape: tuple, shpae of the psf, default is (64,64,64)
+    :param psf_units: tuple, voxel unit (z,y,x) in um, default is (0.1,0.1,0.1)
+    :param psf_na_detection: scalar, numerical apperture default is 1.1
+    :param psf_lam_detection: scalar, wavelength in um, default is 0.5
+    :param psf_n: scalar, refractive index of immersion medium, default is 1.33
+    :param noise_snr: scalar or tuple, signal to noise ratio
+    :param noise_mean: scalar or tuple, mean background noise
+    :param noise_sigma: scalar or tuple, simga for gaussian noise
+    :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
+    :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1}
+    :param crop_shape: tuple, crop shape
+    :param jitter: booelan, randomly move the center point within a given limit, default is False
+    :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
+    :param train_loss: string, training loss, default is 'mse'
+    :param train_epochs: integer, number of epochs for trianing, default is 400
+    :param train_steps_per_epoch: integer, number of steps per epoch, default is 5
+    :param train_learning_rate: scalar, leaning rate, default is 0.0003
+    :param train_batch_size: integer, batch size for training the network, default is 8
+    :param train_n_val: integer, number of validation data, default is 128
+    :param train_tensorboard: boolean, create tensorboard, default is True
+    :param planes: list, z planes with respect to center, if None then it takes all the planes
 
     """
 
