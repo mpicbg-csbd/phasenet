@@ -90,7 +90,6 @@ class Data:
             obj =  self.phantom.get()
             psf = convolve(obj, psf, mode='same')
 
-        # all the checks should be in the constructor
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
             psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
@@ -197,10 +196,7 @@ class Config(BaseConfig):
         self.train_batch_size          = 8
         self.train_n_val               = 128
         self.train_tensorboard         = True
-        # # the parameter 'min_delta' was called 'epsilon' for keras<=2.1.5
-        # min_delta_key = 'epsilon' if LooseVersion(keras.__version__)<=LooseVersion('2.1.5') else 'min_delta'
-        # self.train_reduce_lr           = {'factor': 0.5, 'patience': 40, min_delta_key: 0}
-
+        
         # remove derived attributes that shouldn't be overwritten
         for k in ('n_dim', 'n_channel_out'):
             try: del kwargs[k]
@@ -329,12 +325,6 @@ class PhaseNet(BaseModel):
             if self.config.train_tensorboard:
                 self.callbacks.append(TensorBoard(log_dir=str(self.logdir), write_graph=False))
 
-        # if self.config.train_reduce_lr is not None:
-        #     rlrop_params = self.config.train_reduce_lr
-        #     if 'verbose' not in rlrop_params:
-        #         rlrop_params['verbose'] = True
-        #     self.callbacks.append(ReduceLROnPlateau(**rlrop_params))
-
         self._model_prepared = True
 
 
@@ -363,15 +353,6 @@ class PhaseNet(BaseModel):
             epochs = self.config.train_epochs
         if steps_per_epoch is None:
             steps_per_epoch = self.config.train_steps_per_epoch
-
-        # patch_size = self.config.psf_shape
-        # axes = self.config.axes.replace('C','')
-        # b = self.config.train_completion_crop if self.config.train_shape_completion else 0
-        # div_by = self._axes_div_by(axes)
-        # [(p-2*b) % d == 0 or _raise(ValueError(
-        #     "'train_patch_size' - 2*'train_completion_crop' must be divisible by {d} along axis '{a}'".format(a=a,d=d) if self.config.train_shape_completion else
-        #     "'train_patch_size' must be divisible by {d} along axis '{a}'".format(a=a,d=d)
-        #  )) for p,d,a in zip(patch_size,div_by,axes)]
 
         if not self._model_prepared:
             self.prepare_for_training()
