@@ -2,13 +2,13 @@
 Phasenet is a python package for fast optical aberration estimation from bead images using CNNs trained only on synthetic images. 
 
 
-## Installation:
+## Installation
 
 Phasenet requires Python 3.6 and above.
 
 Install via `pip install git+https://github.com/mpicbg-csbd/phase_net_code.git`
 
-## Usage:
+## Usage
 
 1)  Setup the config file and train the phasenet model as shown in the [training](https://github.com/mpicbg-csbd/phase_net_code/blob/master/notebooks/Training.ipynb) notebook
 2)  Use the trained network to make predictions on acquired bead images from the microscope as shown in the [prediction](https://github.com/mpicbg-csbd/phase_net_code/blob/master/notebooks/Prediction.ipynb) notebook
