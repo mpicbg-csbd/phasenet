@@ -206,17 +206,6 @@ class Config(BaseConfig):
 
         self.n_channel_out = len(random_zernike_wavefront(self.zernike_amplitude_ranges))
 
-        if self.planes is not None:
-            _p = np.array(self.planes)
-            if self.crop_shape is None:
-                self.model_input_shape = tuple((_p.shape[0],self.psf_shape[1],self.psf_shape[2]))
-            else:
-                self.model_input_shape = tuple((_p.shape[0],self.crop_shape[1],self.crop_shape[2]))
-        elif self.crop_shape is not None:
-            self.model_input_shape = self.crop_shape
-        else :
-            self.model_input_shape = self.psf_shape
-
 
 class PhaseNet(BaseModel):
     """PhaseNet model.
@@ -261,8 +250,18 @@ class PhaseNet(BaseModel):
 
 
     def _build(self):
+        if self.config.planes is not None:
+            _p = np.array(self.config.planes)
+            if self.config.crop_shape is None:
+                config.model_input_shape = tuple((_p.shape[0],self.config.psf_shape[1],self.config.psf_shape[2]))
+            else:
+                model_input_shape = tuple((_p.shape[0],self.config.crop_shape[1],self.config.crop_shape[2]))
+        elif self.config.crop_shape is not None:
+            model_input_shape = self.config.crop_shape
+        else :
+            model_input_shape = self.config.psf_shape
 
-        input_shape = tuple(self.config.model_input_shape) + (self.config.n_channel_in,)
+        input_shape = tuple(model_input_shape) + (self.config.n_channel_in,)
         output_size = self.config.n_channel_out
         kernel_size = self.config.net_kernel_size
         pool_size = self.config.net_pool_size
