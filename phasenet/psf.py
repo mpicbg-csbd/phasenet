@@ -4,6 +4,9 @@ from csbdeep.utils import _raise
 
 
 class PsfGenerator3D:
+    """
+    3D PSF generator, courtesy of Martin Weigert (https://github.com/maweigert)
+    """
 
     def __init__(self, psf_shape, units, lam_detection, n, na_detection, n_threads=4):
 
