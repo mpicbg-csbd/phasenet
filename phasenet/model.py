@@ -248,8 +248,7 @@ class PhaseNet(BaseModel):
     def _axes_out(self):
         return 'C'
 
-
-    def _build(self):
+    def get_model_input_shape(self):
         if self.config.planes is not None:
             _p = np.array(self.config.planes)
             if self.config.crop_shape is None:
@@ -260,7 +259,10 @@ class PhaseNet(BaseModel):
             model_input_shape = self.config.crop_shape
         else :
             model_input_shape = self.config.psf_shape
+        return model_input_shape
 
+    def _build(self):
+        model_input_shape = self.get_model_input_shape()
         input_shape = tuple(model_input_shape) + (self.config.n_channel_in,)
         output_size = self.config.n_channel_out
         kernel_size = self.config.net_kernel_size
@@ -418,7 +420,7 @@ class PhaseNet(BaseModel):
 
         _permute_axes = self._make_permute_axes(axes, axes_net)
         x = _permute_axes(img) # x has axes_net semantics
-        x.shape == tuple(self.config.model_input_shape) + (self.config.n_channel_in,) or _raise(ValueError())
+        x.shape == tuple(self.get_model_input_shape()) + (self.config.n_channel_in,) or _raise(ValueError())
 
         normalizer = self._check_normalizer_resizer(normalizer, None)[0]
         x = normalizer.before(x, axes_net)
