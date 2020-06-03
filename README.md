@@ -17,4 +17,4 @@ Install via `pip install git+https://github.com/mpicbg-csbd/phasenet.git`
 ## Troubleshoot
 
 1)  Check if the training images are in well agreement with the observed PSF using the [PSF](https://github.com/mpicbg-csbd/phasenet/blob/master/notebooks/PSF.ipynb) notebook.
-2)  Check the generation of wavefront using the [Wavefront](https://github.com/mpicbg-csbd/phasenet/blob/master/notebooks/Wavefront.ipynb) notebook.
+2)  Check the generation of wavefront using the [wavefront](https://github.com/mpicbg-csbd/phasenet/blob/master/notebooks/Wavefront.ipynb) notebook.
