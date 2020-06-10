@@ -141,7 +141,7 @@ class Config(BaseConfig):
     :param noise_mean: scalar or tuple, mean background noise
     :param noise_sigma: scalar or tuple, simga for gaussian noise
     :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
-    :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name'='sphere',radius':0.1}
+    :param phantom_params: dictionary, parameters for the chosen phantom, e.g. {'name':'sphere','radius':0.1}
     :param crop_shape: tuple, crop shape
     :param jitter: booelan, randomly move the center point within a given limit, default is False
     :param max_jitter: tuple, maximum displacement for jittering, if None then it gets a default value
