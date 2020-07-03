@@ -88,7 +88,7 @@ class Data:
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
-            psf = convolve(obj, psf, mode='same')
+            psf = convolve(psf, obj, mode='same',method='fft')
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True

@@ -122,9 +122,17 @@ class Sphere(Phantom3D):
     
     def get(self):
         self.check_phantom_obj()
-        return self.phantom_obj
-
-
+        _obj = self.phantom_obj
+        z,y,x = self.shape[0]//2, self.shape[1]//2, self.shape[2]//2
+        zindex = np.abs(np.array(np.where(np.sum(_obj,(1,2))>=1)) -z)
+        yindex = np.abs(np.array(np.where(np.sum(_obj,(0,2))>=1)) -y)
+        xindex = np.abs(np.array(np.where(np.sum(_obj,(0,1))>=1)) -x)
+        try:
+            crop = np.max([zindex, yindex, xindex]) + 4
+            cropped_obj = _obj[z-crop:z+crop, y-crop:y+crop, x-crop:x+crop]
+            return cropped_obj
+        except:
+            return _obj 
 
 Phantom3D.register(Points)
 Phantom3D.register(Sphere)
