@@ -21,6 +21,12 @@ from .utils import cropper3D
 from scipy.signal import convolve
 from scipy.ndimage.filters import gaussian_filter
 
+try:
+    from gputools import fft_convolve
+    gputools_flag=True
+except:
+    gputools_flag=False
+
 
 class Data:
 
@@ -88,7 +94,10 @@ class Data:
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
-            psf = convolve(psf, obj, mode='same',method='fft')
+            if gputools_flag:
+                psf = fft_convolve(obj, psf) #the center is shifted by 1 pixel as compared to convolve
+            else:
+                psf = convolve(psf, obj)
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
