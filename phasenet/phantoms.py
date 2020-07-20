@@ -142,7 +142,7 @@ class Images(Phantom3D):
         self.image = self.get_image(filepath)
         self.generate()
 
-    def get_image(filepath):
+    def get_image(self, filepath):
         return tifffile.imread(filepath)
 
     def generate(self):
