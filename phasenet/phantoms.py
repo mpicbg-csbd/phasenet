@@ -139,7 +139,7 @@ class Images(Phantom3D):
         super().__init__(shape)
         self.shape=shape
         self.augment = augment
-        self.image = get_image(filepath)
+        self.image = self.get_image(filepath)
         self.generate()
 
     def get_image(filepath):
