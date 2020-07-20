@@ -4,7 +4,7 @@ import random
 import warnings
 from abc import ABC, abstractmethod
 import inspect
-
+import tifffile
 
 
 class Phantom3D(ABC):
@@ -124,5 +124,40 @@ class Sphere(Phantom3D):
         self.check_phantom_obj()
         return self.phantom_obj
 
+class Images(Phantom3D):
+
+    """
+        creates 3D sphere
+        :param obj_shape: tuple, object shape as (z,y,x), e.g. (64,64,64)
+        :param units: tuple, voxel size in microns, e.g. (0.1,0.1,0.1)
+        :param radius: scalar, radius of sphere in microns, e.g. 0.5
+        :param off_centered: tuple, displacement vector by which center is moved as (k,j,i) e.g. (0,0.5,0.5)
+    """
+
+    def __init__(self, shape, filepath, augment=False):
+        # TODO : augment
+        super().__init__(shape)
+        self.shape=shape
+        self.augment = augment
+        self.image = get_image(filepath)
+        self.generate()
+
+    @lru_cache
+    def get_image(filepath):
+        return tifffile.imread(filepath)
+
+    def generate(self):
+
+        self.image.ndim == 3 or _raise(ValueError("3D image required"))
+
+        # TODO : augment, crop/pad according to shape
+        self.phantom_obj = self.image
+        self.check_phantom_obj()
+    
+    def get(self):
+        self.check_phantom_obj()
+        return self.phantom_obj
+
 Phantom3D.register(Points)
 Phantom3D.register(Sphere)
+Phantom3D.register(Images)
