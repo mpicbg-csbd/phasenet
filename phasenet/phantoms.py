@@ -142,7 +142,6 @@ class Images(Phantom3D):
         self.image = get_image(filepath)
         self.generate()
 
-    @lru_cache
     def get_image(filepath):
         return tifffile.imread(filepath)
 
