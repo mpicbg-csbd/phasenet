@@ -97,7 +97,7 @@ class Data:
             if gputools_flag:
                 psf = fft_convolve(obj, psf) #the center is shifted by 1 pixel as compared to convolve
             else:
-                psf = convolve(psf, obj)
+                psf = convolve(psf, obj,'same')
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
