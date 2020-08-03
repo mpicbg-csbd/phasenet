@@ -23,10 +23,10 @@ from scipy.ndimage.filters import gaussian_filter
 
 try:
     from gputools import fft_convolve
-    gputools_flag=True
+    gputools_flag=False
 except:
     gputools_flag=False
-
+print(f"GPU Tools {gputools_flag}")
 
 class Data:
 
