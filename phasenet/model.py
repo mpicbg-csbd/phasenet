@@ -4,7 +4,8 @@ import warnings
 
 import keras
 import keras.backend as K
-from keras.layers import Input, Conv3D, MaxPooling3D, Flatten, Dense
+# from keras.layers import Input, Conv3D, MaxPooling3D, Flatten, Dense, BatchNormalization, Activation, Add
+from keras.layers import *
 from keras.models import Model
 from keras.optimizers import Adam
 from keras.callbacks import ReduceLROnPlateau, TensorBoard
@@ -137,6 +138,7 @@ class Config(BaseConfig):
             or a tuple with upper and lower bound, default is {'vertical coma': (-0.2,0.2)}
     :param zernike_order: string, zernike nomeclature used when the amplitude ranges are given as a list, default is 'noll'
     :param zernike_normed: booelan, whether the zzernikes are normalized according, default is True
+    :param net_architecture: convnet or resnet, default is convnet
     :param net_kernel_size: convoltuion kernel size, default is (3,3,3)
     :param net_pool_size: max pool kernel size, default is (1,2,2)
     :param net_activation: activation, default is 'tanh'
@@ -178,6 +180,7 @@ class Config(BaseConfig):
         self.zernike_order             = 'noll'
         self.zernike_normed            = True
 
+        self.net_architecture         = "convnet"
         self.net_kernel_size           = (3,3,3)
         self.net_pool_size             = (1,2,2)
         self.net_activation            = 'tanh'
@@ -279,6 +282,15 @@ class PhaseNet(BaseModel):
         activation = self.config.net_activation
         padding = self.config.net_padding
 
+        if self.config.net_architecture == 'resnet':
+            return self._resnet(input_shape, output_size, kernel_size, activation, padding, pool_size)
+        elif self.config.net_architecture == 'convnet':
+            return self._convnet(input_shape, output_size, kernel_size, activation, padding, pool_size)
+        else:
+            _raise(ValueError("Network architecture not defined"))
+
+    def _convnet(self, input_shape, output_size, kernel_size, activation, padding, pool_size):
+
         inp = Input(name='X', shape=input_shape)
         t = Conv3D(8, name='conv1', kernel_size=kernel_size, activation=activation, padding=padding)(inp)
         t = Conv3D(8, name='conv2', kernel_size=kernel_size, activation=activation, padding=padding)(t)
@@ -304,7 +316,49 @@ class PhaseNet(BaseModel):
         t = Dense(64, name='dense2', activation=activation)(t)
 
         oup = Dense(output_size, name='Y', activation='linear')(t)
+
         return Model(inputs=inp, outputs=oup)
+
+
+    def _resnet(self, input_shape, output_size, kernel_size, activation, padding, pool_size):
+
+        def resnet_block(n_filters, kernel_size=kernel_size, batch_norm=True, downsample=False, kernel_initializer="he_normal"):
+            def f(inp):
+                strides = (2, 2, 2) if downsample else (1, 1, 1)
+                x = Conv3D(n_filters, kernel_size, padding='same', use_bias=(not batch_norm),
+                           kernel_initializer=kernel_initializer, strides=strides)(inp)
+                if batch_norm:
+                    x = BatchNormalization()(x)
+                x = Activation(activation)(x)
+
+                x = Conv3D(n_filters, kernel_size, padding=padding, use_bias=(not batch_norm),kernel_initializer=kernel_initializer)(x)
+                if batch_norm:
+                    x = BatchNormalization()(x)
+
+                if downsample:
+                    inp = Conv3D(n_filters, (1, 1, 1), padding=padding, use_bias=(not batch_norm), kernel_initializer=kernel_initializer,
+                                 strides=strides)(inp)
+                    if batch_norm:
+                        inp = BatchNormalization()(inp)
+
+                x = Add()([inp, x])
+                x = Activation(activation)(x)
+                return x
+
+            return f
+
+        inp = Input(input_shape, name='X')
+        x = inp
+        n = 16
+
+        depth = 3
+        for i in range(depth):
+            x = resnet_block(n * (2 ** i), downsample=(i > 0))(x)
+            x = resnet_block(n * (2 ** i))(x)
+        x = GlobalAveragePooling3D()(x)
+        oup = Dense(output_size, name='Y')(x)
+
+        return Model(inp, oup)
 
 
     def prepare_for_training(self, optimizer=None):
