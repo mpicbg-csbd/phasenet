@@ -35,7 +35,7 @@ class Data:
                  amplitude_ranges, order='noll', normed=True,
                  batch_size=1,
                  psf_shape=(64,64,64), units=(0.1,0.1,0.1), na_detection=1.1, lam_detection=.5, n=1.33, n_threads=4,
-                 noise_snr=None, noise_mean=None, noise_sigma=None, gaussian_blur_sigma=None,
+                 noise_snr=None, noise_mean=None, noise_sigma=None, noise_perlin_flag=False, gaussian_blur_sigma=None,
                  phantom_params=None,
                  crop_shape=None, jitter=False, max_jitter=None,
                  planes=None
@@ -51,6 +51,7 @@ class Data:
         :param noise_snr: scalar or tuple, signal to noise ratio
         :param noise_mean: scalar or tuple, mean background noise
         :param noise_sigma: scalar or tuple, simga for gaussian noise
+        :param noise_perlin_flag: boolean, default is False
         :param gaussian_blur_sigma: float, sigma for gaussian bluring after adding noise, default is None
         :param phantom_params : dictionary, phantom name and parameters for that phantom
         :param crop_shape: tuple, crop shape
@@ -67,6 +68,7 @@ class Data:
         self.snr = noise_snr
         self.sigma = noise_sigma
         self.mean = noise_mean
+        self.noise_perlin_flag = noise_perlin_flag
         self.gaussian_blur_sigma = gaussian_blur_sigma
         if planes is not None:
             self.planes = np.array(planes)
@@ -102,7 +104,7 @@ class Data:
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
-            psf = add_random_noise(psf, self.snr, self.mean, self.sigma)
+            psf = add_random_noise(psf, self.snr, self.mean, self.sigma, perlin=self.noise_perlin_flag)
             if self.gaussian_blur_sigma is not None:
                 gaussian_blur = (self.gaussian_blur_sigma, self.gaussian_blur_sigma) if np.isscalar(self.gaussian_blur_sigma) else self.gaussian_blur_sigma
                 gaussian_blur = np.random.uniform(*gaussian_blur)
@@ -194,6 +196,7 @@ class Config(BaseConfig):
         self.noise_mean                = 100
         self.noise_sigma               = 3.5
         self.noise_snr                 = (1.,5)
+        self.noise_perlin_flag         = False
         self.gaussian_blur_sigma       = None
         self.phantom_params            = {'name':'points', 'num':1}
         self.crop_shape                = (32,32,32)
@@ -433,6 +436,7 @@ class PhaseNet(BaseModel):
             noise_snr            = self.config.noise_snr,
             noise_mean           = self.config.noise_mean,
             noise_sigma          = self.config.noise_sigma,
+            noise_perlin_flag    = self.config.noise_perlin_flag,
             gaussian_blur_sigma  = self.config.gaussian_blur_sigma,
             phantom_params       = self.config.phantom_params,
             crop_shape           = self.config.crop_shape,

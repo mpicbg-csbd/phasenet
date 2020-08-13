@@ -1,6 +1,12 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from csbdeep.utils import _raise
+try:
+    from gputools.noise import perlin3
+    gputools_flag=False
+except:
+    gputools_flag=False
+print(f"GPU Tools {gputools_flag}")
 
 def normal_noise(image, mean, sigma, snr):
     noisy = np.random.normal(mean, sigma, image.shape) + image * mean * snr
@@ -12,6 +18,14 @@ def poisson_noise(image, snr):
     noisy = np.random.poisson(np.maximum(1, lambdaDistribution + 1).astype(int)).astype(np.float32)
     return noisy
 
+def perlin_noise(image, mean, snr):
+    Z,Y,X = image.shape
+    z,y,x = np.random.normal(Z/1.5,Z/4), np.random.normal(Y/1.5,Y/4), np.random.normal(X/1.5,X/4)
+    shiftz,shifty, shiftx = np.random.randint(-1000,1000), np.random.randint(-1000,1000), np.random.randint(-1000,1000)
+    return image + mean + perlin3(image.shape, scale=(x,y,z),shift=(shiftx,shifty,shiftz))*mean*snr
+ 
+
+
 def add_normal_poisson_noise(image, mean, sigma, snr):
 
     normal_noise_img = normal_noise(image=image, mean=mean, sigma=sigma, snr=snr)
@@ -19,8 +33,12 @@ def add_normal_poisson_noise(image, mean, sigma, snr):
     noisy_img = normal_noise_img + poisson_noise_img
     return noisy_img
 
+def add_normal_poisson_perlin_noise(image, mean, sigma, snr):
+    noisy_img = add_normal_poisson_noise(image=image, mean=mean, sigma=sigma, snr=snr)
+    return perlin_noise(image=noisy_img, mean=mean, snr=snr)
+
 # TODO: Make this return a function that can repeatedly been applied to an image to make it noisy
-def add_random_noise(image, snr, mean, sigma, rng=None):
+def add_random_noise(image, snr, mean, sigma, perlin=False, rng=None):
     """
         add gaussian and poisson noise to the system
         :param image: 3D array as image
@@ -45,6 +63,12 @@ def add_random_noise(image, snr, mean, sigma, rng=None):
     snr = np.random.uniform(*snr)
     image = (image - np.min(image)) / (np.max(image) + np.min(image))
     noisy = add_normal_poisson_noise(image=image, mean=mean, sigma=sigma, snr=snr)
+
+    if perlin:
+        noisy = add_normal_poisson_perlin_noise(image=image, mean=mean, sigma=sigma, snr=snr)
+    else:
+        noisy = add_normal_poisson_noise(image=image, mean=mean, sigma=sigma, snr=snr)
+
     noisy = np.maximum(0, noisy)
 
     return noisy
