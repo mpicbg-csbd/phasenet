@@ -21,11 +21,14 @@ from .utils import cropper3D
 from scipy.signal import convolve
 from scipy.ndimage.filters import gaussian_filter
 
-try:
-    from gputools import fft_convolve
-    gputools_flag=False
-except:
-    gputools_flag=False
+# TODO
+# try:
+#     from gputools import fft_convolve
+#     gputools_flag=False
+# except:
+#     gputools_flag=False
+gputools_flag = False
+
 print(f"GPU Tools {gputools_flag}")
 
 class Data:
