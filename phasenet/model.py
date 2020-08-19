@@ -27,9 +27,9 @@ from scipy.ndimage.filters import gaussian_filter
 #     gputools_flag=False
 # except:
 #     gputools_flag=False
-gputools_flag = False
+# gputools_flag = False
 
-print(f"GPU Tools {gputools_flag}")
+# print(f"GPU Tools {gputools_flag}")
 
 class Data:
 
@@ -99,10 +99,10 @@ class Data:
         if self.phantom is not None:
             self.phantom.generate()
             obj =  self.phantom.get()
-            if gputools_flag:
-                psf = fft_convolve(obj, psf) #the center is shifted by 1 pixel as compared to convolve
-            else:
-                psf = convolve(psf, obj,'same')
+            # if gputools_flag:
+            #     psf = fft_convolve(obj, psf) #the center is shifted by 1 pixel as compared to convolve
+            # else:
+            psf = convolve(psf, obj,'same')
 
         if self.snr is not None and self.sigma is not None and self.mean is not None:
             self.noise_flag = True
