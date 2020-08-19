@@ -1,11 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from csbdeep.utils import _raise
-try:
-    from gputools.noise import perlin3
-    gputools_flag=False
-except:
-    gputools_flag=False
+# try:
+#     from gputools.noise import perlin3
+#     gputools_flag=False
+# except:
+gputools_flag=False
 print(f"GPU Tools {gputools_flag}")
 
 def normal_noise(image, mean, sigma, snr):
