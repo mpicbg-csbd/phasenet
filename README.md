@@ -1,6 +1,7 @@
 # PhaseNet
 
-PhaseNet is a Python package for fast optical aberration estimation from bead images using CNNs trained only on synthetic images. Please see [our preprint](https://arxiv.org/abs/2006.01804) for details.
+PhaseNet is a Python package for fast optical aberration estimation from bead images using CNNs trained only on synthetic images.
+Please see our [paper](https://doi.org/10.1364/OE.401933) for details (preprint [here](https://arxiv.org/abs/2006.01804)).
 
 
 ## Installation
